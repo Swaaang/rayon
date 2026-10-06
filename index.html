@@ -235,11 +235,42 @@ table.tbl{width:100%;border-collapse:collapse;font-size:13px;font-variant-numeri
 .coll .sec-h{display:flex;gap:10px}
 .coll .sec-h .eyebrow{margin-left:auto;text-align:right}
 .coll .sec-h .chev{margin-left:0}
-/* list quick actions */
-.item-row{display:flex;gap:6px;align-items:stretch}
-.item-row .item{flex:1;min-width:0}
-.qa{flex:none;width:46px;border:1px solid var(--line);background:var(--good-soft);color:var(--good);border-radius:14px;font-size:18px;font-weight:800;cursor:pointer}
-.qa.pub{background:var(--info-soft);color:var(--info);font-size:16px}
+/* swipe rows */
+.sw{position:relative;overflow:hidden;border-radius:14px;--p:0}
+.sw-body{position:relative;z-index:1;touch-action:pan-y;will-change:transform;background:var(--bg);-webkit-user-select:none;user-select:none}
+.sw.drag .sw-body *{pointer-events:none}
+.sw-body .item{width:100%}
+.sw-acts{position:absolute;top:0;bottom:0;display:flex;z-index:0;visibility:hidden}
+.sw-acts.l{right:0} .sw-acts.r{left:0;flex-direction:row-reverse}
+.sw.left .sw-acts.l,.sw.right .sw-acts.r{visibility:visible}
+.sw-act{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;width:78px;border:0;cursor:pointer;color:#fff;font-weight:700;flex:none;transition:flex .18s ease,width .18s ease;-webkit-tap-highlight-color:transparent}
+.sw-act i{font-style:normal;font-size:20px;line-height:1;display:inline-flex;transform:scale(calc(.6 + var(--p)*.4));opacity:calc(.4 + var(--p)*.6);transition:transform .12s}
+.sw-act i svg{width:20px;height:20px}
+.sw-act small{font-size:11px;opacity:var(--p)}
+.sw-act.good{background:var(--good)} .sw-act.info{background:var(--info)} .sw-act.bad{background:var(--bad)} .sw-act.tag{background:var(--tag);color:var(--tag-ink)} .sw-act.neutral{background:var(--muted)} .sw-act.warn{background:var(--warn)} .sw-act.violet{background:var(--violet)}
+.sw.full .sw-acts.l,.sw.full-r .sw-acts.r{width:100%}
+.sw.full .sw-acts.l .sw-act:first-child,.sw.full-r .sw-acts.r .sw-act:first-child{flex:1}
+.sw.full .sw-acts.l .sw-act:not(:first-child){width:0;overflow:hidden;padding:0}
+.sw.full .sw-act:first-child i,.sw.full-r .sw-act:first-child i{transform:scale(1.3)}
+.sw.open .sw-act i{transform:scale(1);opacity:1} .sw.open .sw-act small{opacity:1}
+.kpi.link{cursor:pointer;text-align:left;position:relative;font:inherit;color:inherit}
+.kpi.link .l{padding-right:16px}
+.kpi.link:active{background:var(--surface-2)}
+.kpi-go{position:absolute;right:8px;top:10px;color:var(--muted);opacity:.6}
+.kpi-go svg{width:14px;height:14px}
+tr.rowlink{cursor:pointer} tr.rowlink:active td{background:var(--surface-2)}
+.toast.undo{display:flex;gap:14px;align-items:center;pointer-events:auto;width:max-content;max-width:calc(100% - 32px)}
+.toast.undo span{flex:1;min-width:0}
+.sw.full .sw-acts.l .sw-act:first-child{align-items:flex-end;padding-right:22px}
+.sw.full-r .sw-acts.r .sw-act:first-child{align-items:flex-start;padding-left:22px}
+.toast.undo button{border:0;background:var(--tag);color:var(--tag-ink);border-radius:8px;padding:4px 10px;font-weight:800;cursor:pointer}
+.line-sw .sw-body{background:var(--bg)}
+.line-sw .line{padding:11px 12px;border-bottom:0;background:var(--surface);border:1px solid var(--line);border-radius:12px}
+.line-sw{margin-bottom:6px;border-radius:12px}
+.line-sw .sw-act{width:92px}
+.banner.hint-sw{display:flex;gap:10px;align-items:center;background:var(--accent-soft)}
+.banner.hint-sw button{margin-left:auto;flex:none;border:0;background:var(--accent);color:var(--accent-ink);border-radius:8px;padding:6px 10px;font-weight:700;cursor:pointer}
+.sheet-h,.grab{touch-action:none;cursor:grab}
 .banner{background:var(--warn-soft);border-radius:12px;padding:10px 12px;font-size:13px;margin-top:6px}
 /* form tabs + footer */
 .seg2{display:grid;grid-template-columns:1fr 1fr;gap:4px;background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:4px;margin-bottom:14px}
@@ -636,7 +667,7 @@ function stats(){
   s.marge=s.ca>0?s.benefVentes/s.ca:NaN;
   const mults=sold.filter(a=>artCost(a)>0).map(a=>num(a.prixVente)/artCost(a)); s.mult=mults.length?sum(mults)/mults.length:NaN;
   const dl=sold.map(daysOnline).filter(v=>v!==null&&v>=0); s.delai=dl.length?sum(dl)/dl.length:NaN; s.rapide=dl.length?Math.min(...dl):NaN;
-  s.best=sold.length?Math.max(...sold.map(artProfit)):NaN;
+  s.best=sold.length?Math.max(...sold.map(artProfit)):NaN; s.bestId=sold.length?sold.reduce((m,a)=>artProfit(a)>artProfit(m)?a:m).id:null;
   s.minArt=sum(A,artMinutes); s.minHors=sum(db.temps,t=>num(t.minutes)); s.min=s.minArt+s.minHors; s.h=s.min/60;
   s.eurh=s.h>0?s.net/s.h:NaN; s.eurhV=s.h>0?s.benefVentes/s.h:NaN; s.ecart=isFinite(s.eurhV)?s.eurhV-S.taux:NaN;
   s.valTemps=s.h*S.taux; s.netApres=s.net-s.valTemps; s.minParVente=s.nSold?sum(sold,artMinutes)/s.nSold:NaN;
@@ -770,7 +801,7 @@ function uiSave(){try{localStorage.setItem(UIKEY,JSON.stringify(uiPrefs))}catch(
 const SEC_DEFAULT_OPEN={argent:1,mois_chart:1,ventes:1,temps:0,mois:1,types:1,marques:0};
 function secOpen(id){return uiPrefs["sec_"+id]!==undefined?!!uiPrefs["sec_"+id]:!!SEC_DEFAULT_OPEN[id]}
 function secH(id,title,eyebrow,card){const open=secOpen(id);return `<section class="sec ${card?"card":""} coll ${open?"open":""}" data-sec="${id}"><button type="button" class="sec-h sec-tog" data-act="toggle-sec" data-id="${id}" aria-expanded="${open}"><h2>${title}</h2><span class="eyebrow">${eyebrow}</span><span class="chev">${IC.go}</span></button><div class="sec-body">`}
-function kpi(l,v,sub,cls=""){return `<div class="kpi"><div class="l">${l}</div><div class="v ${cls}">${v}</div>${sub?`<div class="s">${sub}</div>`:""}</div>`}
+function kpi(l,v,sub,cls="",go){ const inner=`<div class="l">${l}</div><div class="v ${cls}">${v}</div>${sub?`<div class="s">${sub}</div>`:""}`; return go?`<button type="button" class="kpi link" data-act="${go.act}" data-id="${go.id}">${inner}<span class="kpi-go">${IC.go}</span></button>`:`<div class="kpi">${inner}</div>` }
 const sgn=v=>v>0?"pos":v<0?"neg":"";
 
 function viewHome(){
@@ -789,12 +820,12 @@ function viewHome(){
 
   ${secH("argent","Argent","Depuis le début")}
     <div class="grid2 k4">
-      ${kpi("Chiffre d'affaires",fmtE(s.ca),`${s.nSold} vente${s.nSold>1?"s":""}`)}
+      ${kpi("Chiffre d'affaires",fmtE(s.ca),`${s.nSold} vente${s.nSold>1?"s":""}`,"",{act:"filter",id:"Vendu"})}
       ${kpi("Bénéfice sur pièces vendues",fmtE(s.benefVentes),isFinite(s.marge)?`marge ${fmtP(s.marge)}`:"aucune vente",sgn(s.benefVentes))}
       ${kpi("ROI",isFinite(s.roi)?fmtP(s.roi):"–","bénéfice net / dépensé",sgn(s.roi))}
       ${kpi("Si tout le stock part",fmtSigned(s.potentiel),`stock affiché ${fmtE0(s.stockPrix)}`,sgn(s.potentiel))}
       ${kpi("Dépensé",fmtE(s.out),`lots ${fmtE0(s.investLots)} · autres ${fmtE0(s.depenses+s.frais)}`)}
-      ${kpi("Stock (coût d'achat)",fmtE(s.stockCout),`${s.nStock+s.nLigne} pièce${s.nStock+s.nLigne>1?"s":""} dispo`)}
+      ${kpi("Stock (coût d'achat)",fmtE(s.stockCout),`${s.nStock+s.nLigne} pièce${s.nStock+s.nLigne>1?"s":""} dispo`,"",{act:"filter",id:"dispo"})}
       ${kpi("Prix de vente moyen",isFinite(s.panier)?fmtE(s.panier):"–",isFinite(s.benefMoy)?`${fmtSigned(s.benefMoy)} / pièce`:"")}
       ${kpi("Multiplicateur",isFinite(s.mult)?fmtN(s.mult)+" x":"–","prix de vente / coût")}
     </div>
@@ -809,12 +840,12 @@ function viewHome(){
     <div class="grid2">
       <div class="card" style="padding:12px"><div class="chart-box sm"><canvas id="cStatus"></canvas></div></div>
       <div style="display:grid;gap:10px">
-        ${kpi("Taux d'écoulement",isFinite(s.ecoul)?fmtP(s.ecoul):"–",`${s.nSold} / ${s.nTot} vendues`)}
+        ${kpi("Taux d'écoulement",isFinite(s.ecoul)?fmtP(s.ecoul):"–",`${s.nSold} / ${s.nTot} vendues`,"",{act:"filter",id:"Vendu"})}
         ${kpi("Délai moyen de vente",isFinite(s.delai)?fmtN(s.delai)+" j":"–",isFinite(s.rapide)?`record : ${s.rapide} j`:"entre mise en ligne et vente")}
       </div>
     </div>
     <div class="grid3" style="margin-top:10px">
-      ${kpi("En ligne",s.nLigne)}${kpi("À publier",s.nStock)}${kpi("Meilleure vente",isFinite(s.best)?fmtE0(s.best):"–","de bénéfice")}
+      ${kpi("En ligne",s.nLigne,"","",{act:"filter",id:"En ligne"})}${kpi("À publier",s.nStock,"","",{act:"filter",id:"En stock"})}${kpi("Meilleure vente",isFinite(s.best)?fmtE0(s.best):"–","de bénéfice","",s.bestId?{act:"open-art",id:s.bestId}:null)}
     </div>
   </div></section>
 
@@ -852,7 +883,7 @@ function viewHome(){
   ${secH("marques","Par marque","top 8",true)}
     <div class="chart-box sm"><canvas id="cBrands"></canvas></div>
     ${s.byBrand.length?`<div class="tbl-w" style="margin-top:10px"><table class="tbl"><thead><tr><th>Marque</th><th>Pièces</th><th>Vendues</th><th>Bénéf.</th><th>Moy.</th><th>Délai</th></tr></thead><tbody>
-      ${s.byBrand.slice(0,12).map(b=>`<tr><td>${esc(b.k)}</td><td>${b.n}</td><td>${b.sold}</td><td class="${sgn(b.b)}">${fmtE0(b.b)}</td><td>${isFinite(b.bm)?fmtE0(b.bm):"–"}</td><td>${isFinite(b.delai)?fmtN(b.delai)+" j":"–"}</td></tr>`).join("")}
+      ${s.byBrand.slice(0,12).map(b=>`<tr class="rowlink" data-act="search" data-id="${esc(b.k)}"><td>${esc(b.k)}</td><td>${b.n}</td><td>${b.sold}</td><td class="${sgn(b.b)}">${fmtE0(b.b)}</td><td>${isFinite(b.bm)?fmtE0(b.bm):"–"}</td><td>${isFinite(b.delai)?fmtN(b.delai)+" j":"–"}</td></tr>`).join("")}
     </tbody></table></div>`:""}
   </div></section>
 
@@ -870,15 +901,21 @@ function artLine(a){
   const right=isSold(a)?`<span class="price ${sgn(artProfit(a))}">${fmtSigned(artProfit(a))}</span>`:`<span class="price">${has(a.prixAffiche)?fmtE0(num(a.prixAffiche)):"–"}</span>`;
   const sub=[a.type,a.taille,a.etat].filter(Boolean).join(" · ");
   const age=a.statut==="En ligne"&&d!==null?` · <span class="${d>=S.alerteJours?"neg":""}">J+${d}</span>`:isSold(a)&&a.dateVente?` · vendu le ${fmtD(a.dateVente)}`:"";
-  const quick=a.statut==="En ligne"||a.statut==="Réservé"?`<button class="qa" data-act="sell" data-id="${a.id}" aria-label="Marquer vendu">✓</button>`:a.statut==="En stock"||a.statut==="Retourné"?`<button class="qa pub" data-act="publish" data-id="${a.id}" aria-label="Mettre en ligne">🚀</button>`:"";
-  return `<div class="item-row"><button class="item" data-act="open-art" data-id="${a.id}">${artThumb(a)}
+  const act=(cls,act,ic,label)=>`<button class="sw-act ${cls}" data-act="${act}" data-id="${a.id}"><i>${ic}</i><small>${label}</small></button>`;
+  let L="",R="";
+  if(a.statut==="En ligne"||a.statut==="Réservé"){ L=act("good","sell","✓","Vendu")+act("tag","annonce",IC.spark,"Annonce"); R=act("warn","drop-price","−10 %","Baisser") }
+  else if(a.statut==="En stock"||a.statut==="Retourné"){ L=act("info","publish","🚀","Publier")+act("tag","annonce",IC.spark,"Annonce"); R=act("neutral","mark-inv","✕","Invendable") }
+  else if(a.statut==="Vendu"){ L=act("neutral","dup-art","⧉","Dupliquer"); R=act("violet","mark-retour","↩","Retour") }
+  else { L=act("bad","del-art-now","🗑","Supprimer"); R=act("info","mark-stock","↺","En stock") }
+  return `<div class="sw" data-swid="${a.id}"><div class="sw-acts l">${L}</div>${R?`<div class="sw-acts r">${R}</div>`:""}<div class="sw-body"><button class="item" data-act="open-art" data-id="${a.id}">${artThumb(a)}
     <div class="mid"><div class="t1">${esc(brandName(a.marque)||"Sans marque")}</div><div class="t2">${esc(sub)}${age}</div><div class="t2 mono">${esc(a.ref)}${a.lotId&&lotById(a.lotId)?" · "+esc(lotById(a.lotId).ref):""}</div></div>
-    <div class="rt">${right}<span class="pill ${ST_CLASS[a.statut]}">${a.statut}</span></div></button>${quick}</div>`;
+    <div class="rt">${right}<span class="pill ${ST_CLASS[a.statut]}">${a.statut}</span></div></button></div></div>`;
 }
 function viewStock(){
   const S=db.settings, q=norm(ui.q);
   let L=db.articles.slice();
   if(ui.filter==="old") L=L.filter(a=>a.statut==="En ligne"&&daysOnline(a)>=S.alerteJours);
+  else if(ui.filter==="dispo") L=L.filter(a=>!isSold(a)&&a.statut!=="Invendable");
   else if(ui.filter!=="Tous") L=L.filter(a=>a.statut===ui.filter);
   if(q) L=L.filter(a=>norm([a.marque,a.type,a.taille,a.couleur,a.ref,a.notes].join(" ")).includes(q));
   const sorts={recent:(a,b)=>(b.created||0)-(a.created||0),prix:(a,b)=>num(b.prixVente||b.prixAffiche)-num(a.prixVente||a.prixAffiche),
@@ -895,8 +932,9 @@ function viewStock(){
     </select>
   </div>
   <div class="chips">${filters.map(f=>`<button class="chip ${ui.filter===f?"on":""}" data-act="filter" data-id="${f}">${f}<span class="n">${f==="Tous"?db.articles.length:counts(f)}</span></button>`).join("")}
-    ${ui.filter==="old"?`<button class="chip on" data-act="filter" data-id="Tous">En ligne depuis longtemps ✕</button>`:""}</div>
+    ${ui.filter==="old"?`<button class="chip on" data-act="filter" data-id="Tous">En ligne depuis longtemps ✕</button>`:ui.filter==="dispo"?`<button class="chip on" data-act="filter" data-id="Tous">Disponibles ✕</button>`:""}</div>
   ${ui.filter==="old"?`<div class="banner">Ces pièces sont en ligne depuis ${S.alerteJours} jours ou plus. Baisse le prix de 10 à 15 %, change la 1re photo ou relance l'annonce.</div>`:ui.filter==="En stock"&&L.length?`<div class="banner">Pas encore en ligne : ouvre une pièce, génère l'annonce et publie-la. Le bouton 🚀 fait ça en un geste.</div>`:ui.filter==="Réservé"&&L.length?`<div class="banner">Dès que le paiement est validé, le ✓ marque la pièce vendue.</div>`:""}
+  ${L.length&&!uiPrefs.swipeHint?`<div class="banner hint-sw" id="swipeHint">👈 Glisse une pièce vers la gauche pour la vendre, la publier ou générer l'annonce. 👉 Vers la droite pour baisser le prix ou la marquer invendable. À fond : l'action part directement. <button type="button" data-act="hint-ok">OK</button></div>`:""}
   <div class="list">${L.length?L.map(artLine).join(""):`<div class="empty"><h3>${db.articles.length?"Rien ici":"Ton stock est vide"}</h3><p>${db.articles.length?"Aucune pièce ne correspond à ce filtre.":"Quand ta box arrive, ouvre « Lots » et lance la réception : tu ajouteras les pièces en rafale."}</p>${db.articles.length?"":`<button class="btn pri" data-act="new-art">Ajouter une pièce</button>`}</div>`}</div>`;
 }
 
@@ -950,6 +988,7 @@ function render(){
   $("#main").innerHTML=V();
   $("#demoBand").hidden=db===real;
   if(ui.view==="home") drawCharts();
+  if(ui.view==="stock") swPeek();
   hydratePhotos($("#main"));
   updChrono();
 }
@@ -980,7 +1019,7 @@ function drawCharts(){
     const cols=[cssv("--muted"),cssv("--info"),cssv("--warn"),cssv("--good"),cssv("--violet"),cssv("--bad")];
     const idx=s.statusCounts.map((v,i)=>i).filter(i=>s.statusCounts[i]>0);
     ui.charts.push(new Chart($("#cStatus"),{type:"doughnut",data:{labels:idx.map(i=>STATUTS[i]),datasets:[{data:idx.map(i=>s.statusCounts[i]),backgroundColor:idx.map(i=>cols[i]),borderColor:cssv("--surface"),borderWidth:2}]},
-      options:{responsive:true,maintainAspectRatio:false,cutout:"62%",plugins:{legend:{position:"bottom",labels:{boxWidth:10,boxHeight:10,padding:8,font:{size:11}}}}}}));
+      options:{responsive:true,maintainAspectRatio:false,cutout:"62%",onClick:(ev,els)=>{if(els&&els.length){ui.filter=STATUTS[idx[els[0].index]];go("stock")}},plugins:{legend:{position:"bottom",onClick:(ev,item)=>{ui.filter=item.text;go("stock")},labels:{boxWidth:10,boxHeight:10,padding:8,font:{size:11}}}}}}));
   } else emptyChart("cStatus","Aucune pièce");
   // types & brands
   const hbar=(id,rows,useB)=>{
@@ -998,6 +1037,71 @@ new MutationObserver(()=>{if(ui.view==="home")render()}).observe(document.docume
 
 /* ================= sheet ================= */
 let sheetOnClose=null;
+/* ---------- Swipe actions (façon iOS) ---------- */
+const SW={el:null,open:null,x0:0,y0:0,x:0,axis:null,w:0,awL:0,awR:0,suppress:false,raf:0,side:null,startX:0,vx:0,lastX:0,lastT:0};
+const SPRING="transform .32s cubic-bezier(.22,1.1,.36,1)";
+function swBody(el){return el.querySelector(".sw-body")}
+function swClose(el,instant){ if(!el) return; const b=swBody(el); b.style.transition=instant?"none":SPRING; b.style.transform="translateX(0)"; el.classList.remove("open","full","full-r","drag","left","right"); el.style.removeProperty("--p"); if(SW.open===el) SW.open=null }
+function swPaint(){ SW.raf=0; const el=SW.el; if(!el) return; const x=SW.x; swBody(el).style.transform=`translateX(${x}px)`;
+  const side=x<0?"left":x>0?"right":null; if(side!==SW.side){ SW.side=side; el.classList.toggle("left",side==="left"); el.classList.toggle("right",side==="right") }
+  const aw=side==="left"?SW.awL:SW.awR; el.style.setProperty("--p",aw?Math.min(1,Math.abs(x)/aw).toFixed(3):0);
+  const raw=SW.raw||0; const fullL=raw<-SW.w*.5&&SW.awL>0, fullR=raw>SW.w*.5&&SW.awR>0;
+  if(fullL!==el.classList.contains("full")){ el.classList.toggle("full",fullL); if(fullL) buzz(8) }
+  if(fullR!==el.classList.contains("full-r")){ el.classList.toggle("full-r",fullR); if(fullR) buzz(8) }
+}
+function rubber(d,limit){ return d<=limit?d:limit+(d-limit)*0.45 }
+document.addEventListener("pointerdown",e=>{
+  if(e.pointerType==="mouse"&&e.button!==0) return;
+  const body=e.target.closest(".sw-body"); const el=body&&body.closest(".sw");
+  if(SW.open&&SW.open!==el&&!(e.target.closest(".sw")===SW.open)) swClose(SW.open);
+  if(!el) return;
+  const L=el.querySelector(".sw-acts.l"), R=el.querySelector(".sw-acts.r");
+  SW.el=el; SW.x0=e.clientX; SW.y0=e.clientY; SW.axis=null; SW.side=null; SW.w=el.offsetWidth; SW.awL=L?L.offsetWidth:0; SW.awR=R?R.offsetWidth:0;
+  const cur=swBody(el).style.transform.match(/-?[\d.]+/); SW.startX=el.classList.contains("open")&&cur?parseFloat(cur[0]):0; SW.x=SW.startX;
+  SW.lastX=e.clientX; SW.lastT=e.timeStamp; SW.vx=0; body.style.transition="none";
+},{passive:true});
+document.addEventListener("pointermove",e=>{
+  const el=SW.el; if(!el) return;
+  const dx=e.clientX-SW.x0, dy=e.clientY-SW.y0;
+  if(!SW.axis){ if(Math.abs(dx)<5&&Math.abs(dy)<5) return; SW.axis=Math.abs(dx)>Math.abs(dy)*1.15?"x":"y"; if(SW.axis==="x"){ el.classList.add("drag"); try{swBody(el).setPointerCapture(e.pointerId)}catch(_){} } }
+  if(SW.axis!=="x") return;
+  let x=SW.startX+dx; SW.raw=x;
+  if(x<0){ const lim=SW.awL||0; x=-rubber(-x,lim); if(!SW.awL) x=-rubber(-x,0)*.5; if(x<-SW.w*.92) x=-SW.w*.92 }
+  else if(x>0){ const lim=SW.awR||0; x=rubber(x,lim); if(!SW.awR) x=x*.5; if(x>SW.w*.92) x=SW.w*.92 }
+  const dt=e.timeStamp-SW.lastT; if(dt>0){ SW.vx=(e.clientX-SW.lastX)/dt; SW.lastX=e.clientX; SW.lastT=e.timeStamp }
+  SW.x=x; if(!SW.raf) SW.raf=requestAnimationFrame(swPaint);
+},{passive:true});
+function swFire(el,btn,dir){ const b=swBody(el); b.style.transition="transform .18s ease-out"; b.style.transform=`translateX(${dir*SW.w}px)`; el.classList.remove("full","full-r"); buzz(18); markSwipeLearned();
+  setTimeout(()=>{ swClose(el,true); if(btn) btn.click() },150) }
+function swEnd(e,cancel){
+  const el=SW.el; if(!el) return; SW.el=null; if(SW.raf){cancelAnimationFrame(SW.raf);SW.raf=0;swPaint.call(null)}
+  if(SW.axis){ SW.suppress=true; setTimeout(()=>SW.suppress=false,350) }
+  el.classList.remove("drag");
+  if(SW.axis!=="x") return;
+  if(cancel){ swClose(el); return }
+  const x=SW.x, v=SW.vx, raw=SW.raw||0; // px/ms
+  const L=el.querySelector(".sw-acts.l"), R=el.querySelector(".sw-acts.r");
+  if(x<0&&L){ if(el.classList.contains("full")||(v<-1.2&&raw<-SW.w*.3)) return swFire(el,L.querySelector(".sw-act"),-1);
+    if(x<-SW.awL*.4||v<-.5){ swBody(el).style.transition=SPRING; swBody(el).style.transform=`translateX(${-SW.awL}px)`; el.style.setProperty("--p",1); el.classList.add("open"); SW.open=el; buzz(6); markSwipeLearned(); return } }
+  if(x>0&&R){ if(el.classList.contains("full-r")||(v>1.2&&raw>SW.w*.3)) return swFire(el,R.querySelector(".sw-act"),1);
+    if(x>SW.awR*.4||v>.5){ swBody(el).style.transition=SPRING; swBody(el).style.transform=`translateX(${SW.awR}px)`; el.style.setProperty("--p",1); el.classList.add("open"); SW.open=el; buzz(6); markSwipeLearned(); return } }
+  swClose(el);
+}
+document.addEventListener("pointerup",e=>swEnd(e,false),{passive:true});
+document.addEventListener("pointercancel",e=>swEnd(e,true),{passive:true});
+document.addEventListener("click",e=>{ if(SW.suppress&&e.target.closest(".sw-body")){e.stopPropagation();e.preventDefault();SW.suppress=false;return}
+  if(SW.open){ const inBody=e.target.closest(".sw-body"); if(inBody&&inBody.closest(".sw")===SW.open){ e.stopPropagation(); e.preventDefault(); swClose(SW.open); return } if(!e.target.closest(".sw-acts")) swClose(SW.open) } },true);
+function markSwipeLearned(){ if(!uiPrefs.swipeHint){ uiPrefs.swipeHint=1; uiSave(); const h=$("#swipeHint"); if(h) h.remove() } }
+function swPeek(){ if(uiPrefs.swipeHint) return; const el=document.querySelector(".list .sw"); if(!el) return; const b=swBody(el); setTimeout(()=>{ el.classList.add("left"); el.style.setProperty("--p","1"); b.style.transition="transform .4s cubic-bezier(.22,1.1,.36,1)"; b.style.transform="translateX(-80px)"; setTimeout(()=>{ b.style.transform="translateX(0)"; setTimeout(()=>el.classList.remove("left"),400) },700) },500) }
+/* Annuler */
+let undoT=null;
+function toastUndo(msg,fn){ const t=$("#toast"); t.innerHTML=`<span>${esc(msg)}</span><button type="button" id="undoBtn">Annuler</button>`; t.classList.add("on","undo"); clearTimeout(toastT); clearTimeout(undoT);
+  $("#undoBtn").onclick=()=>{ clearTimeout(undoT); t.classList.remove("on","undo"); fn() }; undoT=setTimeout(()=>t.classList.remove("on","undo"),5000) }
+/* ---------- Tirer le panneau vers le bas pour fermer ---------- */
+const SD={on:false,y0:0,dy:0};
+document.addEventListener("pointerdown",e=>{ const h=e.target.closest(".sheet-h,.grab"); if(!h||e.target.closest("button")) return; SD.on=true; SD.y0=e.clientY; SD.dy=0; $("#sheet").style.transition="none" },{passive:true});
+document.addEventListener("pointermove",e=>{ if(!SD.on) return; SD.dy=Math.max(0,e.clientY-SD.y0); $("#sheet").style.transform=`translateY(${SD.dy}px)` },{passive:true});
+document.addEventListener("pointerup",()=>{ if(!SD.on) return; SD.on=false; const sh=$("#sheet"); sh.style.transition=""; if(SD.dy>110){ sh.style.transform=""; closeSheet() } else sh.style.transform="" },{passive:true});
 /* pile de calques + bouton retour (Android / navigateur) */
 const layers=[]; let popping=false, expectPop=0;
 function pushLayer(n){ layers.push(n); try{history.pushState({layer:n,depth:layers.length},"")}catch(e){} }
@@ -1006,20 +1110,22 @@ window.addEventListener("popstate",()=>{ if(expectPop>0){expectPop--;return} if(
 function openSheet(title,html,onClose,footer){
   $("#sheetTitle").textContent=title; $("#sheetBody").innerHTML=html; $("#sheetBody").scrollTop=0;
   const f=$("#sheetFoot"); f.innerHTML=footer||""; f.hidden=!footer;
-  if($("#sheet").hidden) pushLayer("sheet");
+  if(!sheetIsOpen){ sheetIsOpen=true; pushLayer("sheet") }
   $("#scrim").hidden=false; $("#sheet").hidden=false; sheetOnClose=onClose||null;
   requestAnimationFrame(()=>{$("#scrim").classList.add("on");$("#sheet").classList.add("on")});
   try{if(!matchMedia("(pointer:coarse)").matches){const f=$("#sheetBody").querySelector("input:not([type=file]):not([type=date]),select,textarea");if(f)setTimeout(()=>f.focus(),260)}}catch(e){}
   hydratePhotos($("#sheetBody"));
 }
+let sheetIsOpen=false;
 function closeSheet(){
+  if(!sheetIsOpen) return; sheetIsOpen=false;
   popLayer("sheet");
   $("#scrim").classList.remove("on");$("#sheet").classList.remove("on");
   setTimeout(()=>{$("#scrim").hidden=true;$("#sheet").hidden=true;$("#sheetBody").innerHTML=""},220);
   if(sheetOnClose){const f=sheetOnClose;sheetOnClose=null;f()}
 }
 let toastT;
-function toast(m){const t=$("#toast");t.textContent=m;t.classList.add("on");clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove("on"),2200)}
+function toast(m){const t=$("#toast");t.textContent=m;t.classList.remove("undo");t.classList.add("on");clearTimeout(toastT);clearTimeout(undoT);toastT=setTimeout(()=>t.classList.remove("on"),2200)}
 
 /* ================= forms ================= */
 const optGroup=(name,list,val,multi)=>`<div class="opt" data-opt="${name}" ${multi?'data-multi="1"':""}>${list.map(v=>`<button type="button" data-v="${esc(v)}" class="${(multi?(val||[]).includes(v):val===v)?"on":""}">${esc(v)}</button>`).join("")}</div>`;
@@ -1278,7 +1384,7 @@ function depsSheet(){
     <div class="fg"><span class="lbl">Catégorie</span>${optGroup("dcat",DEP_CATS,"Emballage")}</div>
     <div class="fg"><label for="dX">Détail</label><input class="inp" id="dX" placeholder="Pochettes d'envoi x50"></div>
     <button class="btn pri block" type="submit">Ajouter</button></form>
-    <div class="sec">${L.length?L.map(d=>`<div class="line"><span>${fmtD(d.date)} · ${esc(d.cat)}${d.detail?` <span class="muted">· ${esc(d.detail)}</span>`:""}</span><b>${fmtE(num(d.montant))} <button class="x" style="display:inline-grid;width:28px;height:28px;margin-left:6px" data-act="del-dep" data-id="${d.id}" aria-label="Supprimer">✕</button></b></div>`).join(""):`<p class="muted">Aucune dépense pour l'instant.</p>`}</div>`);
+    <div class="sec">${L.length?`<p class="hint" style="margin:0 0 6px">Glisse une ligne vers la gauche pour la supprimer.</p>`+L.map(d=>`<div class="sw line-sw" data-swid="${d.id}"><div class="sw-acts l"><button class="sw-act bad" data-act="del-dep" data-id="${d.id}"><i>🗑</i><small>Supprimer</small></button></div><div class="sw-body"><div class="line"><span>${fmtD(d.date)} · ${esc(d.cat)}${d.detail?` <span class="muted">· ${esc(d.detail)}</span>`:""}</span><b>${fmtE(num(d.montant))}</b></div></div></div>`).join(""):`<p class="muted">Aucune dépense pour l'instant.</p>`}</div>`);
 }
 function timesSheet(){
   const L=db.temps.slice().sort((a,b)=>(b.date||"").localeCompare(a.date||""));
@@ -1287,7 +1393,7 @@ function timesSheet(){
     <div class="fg"><label for="tD">Date</label><input class="inp" type="date" id="tD" value="${today()}"></div></div>
     <div class="fg"><label for="tL">Activité</label><input class="inp" id="tL" placeholder="Tri du lot, shooting photo…"></div>
     <button class="btn pri block" type="submit">Ajouter</button></form>
-    <div class="sec">${L.length?L.map(t=>`<div class="line"><span>${fmtD(t.date)} · ${esc(t.label||"Temps")}</span><b>${hrs(num(t.minutes))} <button class="x" style="display:inline-grid;width:28px;height:28px;margin-left:6px" data-act="del-time" data-id="${t.id}" aria-label="Supprimer">✕</button></b></div>`).join(""):`<p class="muted">Rien pour l'instant. Utilise le chrono en haut à droite.</p>`}</div>`);
+    <div class="sec">${L.length?`<p class="hint" style="margin:0 0 6px">Glisse une ligne vers la gauche pour la supprimer.</p>`+L.map(t=>`<div class="sw line-sw" data-swid="${t.id}"><div class="sw-acts l"><button class="sw-act bad" data-act="del-time" data-id="${t.id}"><i>🗑</i><small>Supprimer</small></button></div><div class="sw-body"><div class="line"><span>${fmtD(t.date)} · ${esc(t.label||"Temps")}</span><b>${hrs(num(t.minutes))}</b></div></div></div>`).join(""):`<p class="muted">Rien pour l'instant. Utilise le chrono en haut à droite.</p>`}</div>`);
 }
 function settingsSheet(){
   const S=db.settings, f=(id,l,v,h)=>`<div class="fg"><label for="${id}">${l}</label><input class="inp" id="${id}" inputmode="decimal" value="${esc(v)}">${h?`<span class="hint">${h}</span>`:""}</div>`;
@@ -1363,12 +1469,33 @@ function makeDemo(){
       a.statut="Vendu";a.dateEnLigne=ago(on);a.dateVente=ago(sell);a.prixVente=Math.round(p*(.8+r()*.25));a.frais=r()<.3?0.5:0;a.minAnnonce=8+Math.floor(r()*10)}
     else if(roll<.93){a.statut=r()<.12?"Réservé":"En ligne";a.dateEnLigne=ago(Math.floor(r()*Math.min(lotAge,45)))}
     else a.statut=r()<.4?"Invendable":"En stock";
+    a.photo=true; Photos.cache[a.id]=demoPhoto(a);
     d.articles.push(a)}});
   d.depenses=[{id:"x1",date:ago(110),cat:"Emballage",montant:12.9,detail:"Pochettes x100"},{id:"x2",date:ago(50),cat:"Boost / Vitrine",montant:4.95,detail:"Vitrine 7 jours"}];
   d.temps=[{id:"t1",date:ago(115),minutes:90,label:"Tri du lot"},{id:"t2",date:ago(58),minutes:120,label:"Shooting photo"}];
   d.seq={a:n,l:3}; return d;
 }
 function suggestPriceFor(a){return nice(estimateRaw(a)*1.1)}
+const DEMO_COL={"Noir":"#2B2B2E","Blanc":"#F2F0EA","Gris":"#9A9CA3","Bleu marine":"#243B6B","Bleu":"#3C78C8","Beige":"#D9C6A5","Camel":"#B3773E","Marron":"#6B4A2E","Vert":"#3E7A4C","Kaki":"#6F7349","Bordeaux":"#7A2634","Rouge":"#C83C3C","Rose":"#E39AB5","Jaune":"#E6C24A","Orange":"#E07A2F","Multicolore":"#8C6BC8"};
+const DEMO_SHAPES={
+  sweat:"M30 42 L48 30 Q60 36 72 30 L90 42 L84 58 L78 54 L78 96 L42 96 L42 54 L36 58 Z",
+  hoodie:"M30 44 L46 32 Q52 22 60 22 Q68 22 74 32 L90 44 L84 60 L78 56 L78 96 L42 96 L42 56 L36 60 Z M48 36 Q60 48 72 36",
+  polo:"M32 42 L50 32 L55 42 L60 36 L65 42 L70 32 L88 42 L82 56 L76 52 L76 94 L44 94 L44 52 L38 56 Z",
+  chemise:"M32 42 L50 30 L60 46 L70 30 L88 42 L82 56 L76 52 L76 96 L44 96 L44 52 L38 56 Z M60 46 L60 96",
+  veste:"M28 44 L48 30 L60 44 L72 30 L92 44 L86 62 L80 58 L80 98 L40 98 L40 58 L34 62 Z M60 44 L60 98 M52 60 L48 60 M72 60 L68 60",
+  pant:"M44 28 L76 28 L80 96 L64 96 L60 60 L56 96 L40 96 Z",
+  tee:"M34 40 L50 32 Q60 38 70 32 L86 40 L82 52 L76 50 L76 92 L44 92 L44 50 L38 52 Z",
+  short:"M44 30 L76 30 L78 66 L62 66 L60 50 L58 66 L42 66 Z"
+};
+function demoPhoto(a){
+  const col=DEMO_COL[a.couleur]||"#8A8F99", t=a.type||"";
+  const shape=/Hoodie/.test(t)?DEMO_SHAPES.hoodie:/Sweat|Pull|Gilet/.test(t)?DEMO_SHAPES.sweat:/Polo/.test(t)?DEMO_SHAPES.polo:/Chemise|Blazer/.test(t)?DEMO_SHAPES.chemise:/Veste|Doudoune|Manteau/.test(t)?DEMO_SHAPES.veste:/Pantalon|Jean/.test(t)?DEMO_SHAPES.pant:/Short/.test(t)?DEMO_SHAPES.short:DEMO_SHAPES.tee;
+  const light=["#F2F0EA","#D9C6A5","#E6C24A","#E39AB5"].includes(col); const stroke=light?"rgba(0,0,0,.35)":"rgba(255,255,255,.35)";
+  const bg=["#EEE9DF","#E6EBE7","#ECE6EE","#E9EDF3"][(a.ref||"").length%4];
+  const init=esc((brandName(a.marque)||"?").charAt(0));
+  const svg=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120"><rect width="120" height="120" fill="${bg}"/><path d="${shape}" fill="${col}" stroke="${stroke}" stroke-width="2" stroke-linejoin="round"/><text x="60" y="76" text-anchor="middle" font-family="Arial" font-weight="700" font-size="22" fill="${light?"rgba(0,0,0,.45)":"rgba(255,255,255,.75)"}">${init}</text></svg>`;
+  return "data:image/svg+xml;utf8,"+encodeURIComponent(svg);
+}
 
 /* ================= events ================= */
 document.addEventListener("click",async e=>{
@@ -1386,6 +1513,12 @@ document.addEventListener("click",async e=>{
   switch(act){
     case "close": closeSheet(); break;
     case "pick-brand": openPicker(setFormBrand,val("fMarque")); break;
+    case "hint-ok": markSwipeLearned(); break;
+    case "drop-price": { const a=A(); if(!a) break; const old=num(a.prixAffiche); if(!(old>0)){toast("Pas de prix affiché sur cette pièce");openArt(id);break} const cost=artCost(a); let nv=Math.max(Math.ceil(cost*1.2)||1,Math.round(old*0.9)); if(nv>=old) nv=old-1; if(nv<1){toast("Prix déjà au plancher");break} a.prixAffiche=String(nv); save(); render(); toastUndo(`${fmtE0(old)} → ${fmtE0(nv)} · pense à modifier sur Vinted`,()=>{a.prixAffiche=String(old);save();render()}); break }
+    case "mark-inv": { const a=A(); if(!a) break; const prev=a.statut; a.statut="Invendable"; save(); render(); toastUndo(`${a.ref} marquée invendable`,()=>{a.statut=prev;save();render()}); break }
+    case "mark-retour": { const a=A(); if(!a) break; const prev={statut:a.statut,prixVente:a.prixVente,dateVente:a.dateVente}; a.statut="Retourné"; a.prixVente=""; a.dateVente=""; save(); render(); toastUndo(`${a.ref} marquée retournée`,()=>{Object.assign(a,prev);save();render()}); break }
+    case "mark-stock": { const a=A(); if(!a) break; const prev=a.statut; a.statut="En stock"; save(); render(); toastUndo(`${a.ref} remise en stock`,()=>{a.statut=prev;save();render()}); break }
+    case "del-art-now": { const a=A(); if(!a) break; const idx=db.articles.indexOf(a); db.articles.splice(idx,1); save(); render(); toastUndo(`${a.ref} supprimée`,()=>{db.articles.splice(Math.min(idx,db.articles.length),0,a);save();render()}); break }
     case "pane": { document.querySelectorAll(".seg2 [role=tab]").forEach(b=>b.classList.toggle("on",b.dataset.id===id)); document.querySelectorAll(".fpane").forEach(p=>p.hidden=p.dataset.pane!==id); $("#sheetBody").scrollTop=0; break }
     case "toggle-sec": { const sec=t.closest(".coll"); const open=!sec.classList.contains("open"); sec.classList.toggle("open",open); t.setAttribute("aria-expanded",open); uiPrefs["sec_"+id]=open?1:0; uiSave(); if(open&&ui.view==="home"){destroyCharts();drawCharts()} break }
     case "pick-clear": setFormBrand(""); break;
@@ -1415,7 +1548,8 @@ document.addEventListener("click",async e=>{
     case "dup-art": { const a=A(); if(!a)break; const c=JSON.parse(JSON.stringify(a)); Object.assign(c,{id:uid(),ref:nextRef("a"),created:Date.now(),statut:"En stock",photo:false,dateEnLigne:"",dateVente:"",prixVente:"",frais:""}); db.articles.push(c); save(); toast(`${c.ref} créée`); openArt(c.id); render(); break }
     case "del-art": if(t.classList.contains("armed")){const a=A();db.articles=db.articles.filter(x=>x.id!==id);if(a&&a.photo)Photos.del(id);save();closeSheet();render();toast("Pièce supprimée")}else{t.classList.add("armed");t.textContent="Appuie encore pour supprimer"} break;
     case "use-sug": { const i=$("#fPrix"); if(i){i.value=t.dataset.v; i.dispatchEvent(new Event("input",{bubbles:true}))} break }
-    case "filter": ui.filter=id||"Tous"; if(ui.view!=="stock")go("stock"); else render(); break;
+    case "filter": ui.filter=id||"Tous"; ui.q=""; if(ui.view!=="stock")go("stock"); else render(); break;
+    case "search": ui.q=id||""; ui.filter="Tous"; go("stock"); break;
     case "lot-stock": ui.q=lotById(id)?.ref||""; ui.filter="Tous"; closeSheet(); go("stock"); break;
     case "alert": { const a=t.dataset.a; if(a==="receive"||a==="rafale"){ if(a==="receive")receiveSheet(lotById(id)); else openArt(null,{rafale:true,lotId:id}) } else if(a==="filter"){ui.filter=id;go("stock")} else if(a==="nav"){ if(id==="backup")backupSheet(); else go(id)} else if(a==="sec"){ const sec=document.querySelector(`[data-sec="${id}"]`); if(sec){sec.classList.add("open");uiPrefs["sec_"+id]=1;uiSave();sec.scrollIntoView({behavior:"smooth",block:"start"})} } break }
     case "edit-lot": lotForm(id?lotById(id):null); break;
@@ -1423,9 +1557,9 @@ document.addEventListener("click",async e=>{
     case "rafale": openArt(null,{rafale:true,lotId:id}); break;
     case "del-lot": if(t.classList.contains("armed")){db.lots=db.lots.filter(l=>l.id!==id);db.articles.forEach(a=>{if(a.lotId===id)a.lotId=""});save();closeSheet();render();toast("Lot supprimé")}else{t.classList.add("armed");t.textContent="Appuie encore : les pièces restent, sans lot"} break;
     case "deps": depsSheet(); break;
-    case "del-dep": db.depenses=db.depenses.filter(d=>d.id!==id); save(); depsSheet(); render(); break;
+    case "del-dep": { const d=db.depenses.find(x=>x.id===id); db.depenses=db.depenses.filter(x=>x.id!==id); save(); depsSheet(); render(); if(d) toastUndo("Dépense supprimée",()=>{db.depenses.push(d);save();if(!$("#sheet").hidden)depsSheet();render()}); break }
     case "times": timesSheet(); break;
-    case "del-time": db.temps=db.temps.filter(d=>d.id!==id); save(); timesSheet(); render(); break;
+    case "del-time": { const d=db.temps.find(x=>x.id===id); db.temps=db.temps.filter(x=>x.id!==id); save(); timesSheet(); render(); if(d) toastUndo("Temps supprimé",()=>{db.temps.push(d);save();if(!$("#sheet").hidden)timesSheet();render()}); break }
     case "settings": settingsSheet(); break;
     case "backup": backupSheet(); break;
     case "exp-json": { const ok=download(`rayon-sauvegarde-${today()}.json`,exportJSON(),"application/json"); real.lastBackup=new Date().toISOString(); save(); toast(ok?"Sauvegarde téléchargée":"Téléchargement bloqué : utilise « Copier »"); break }
