@@ -261,6 +261,9 @@ table.tbl{width:100%;border-collapse:collapse;font-size:13px;font-variant-numeri
 tr.rowlink{cursor:pointer} tr.rowlink:active td{background:var(--surface-2)}
 .toast.undo{display:flex;gap:14px;align-items:center;pointer-events:auto;width:max-content;max-width:calc(100% - 32px)}
 .toast.undo span{flex:1;min-width:0}
+.toast .tlink{color:var(--bg);text-decoration:underline;font-weight:800;flex:none}
+.urlrow{display:flex;gap:8px;align-items:center} .urlrow .inp{flex:1;min-width:0} .urlrow .btn{flex:none}
+a.btn{text-decoration:none}
 .sw.full .sw-acts.l .sw-act:first-child{align-items:flex-end;padding-right:22px}
 .sw.full-r .sw-acts.r .sw-act:first-child{align-items:flex-start;padding-left:22px}
 .toast.undo button{border:0;background:var(--tag);color:var(--tag-ink);border-radius:8px;padding:4px 10px;font-weight:800;cursor:pointer}
@@ -635,6 +638,7 @@ const pd=s=>{if(!s)return null;const [y,m,d]=s.split("-").map(Number);return new
 const days=(a,b)=>Math.round((pd(b)-pd(a))/86400000);
 const fmtD=s=>s?pd(s).toLocaleDateString("fr-FR",{day:"2-digit",month:"short"}):"–";
 const uid=()=>Math.random().toString(36).slice(2,10);
+function cleanUrl(u){ u=(u||"").trim(); if(!u) return ""; if(!/^https?:\/\//i.test(u)) u="https://"+u; try{ const x=new URL(u); return /vinted\./i.test(x.hostname)?x.origin+x.pathname:u }catch(e){ return "" } }
 const sum=(arr,f)=>arr.reduce((s,x)=>s+(f?f(x):x),0);
 const hrs=m=>{const h=Math.floor(m/60),mm=Math.round(m%60);return h?`${h} h ${String(mm).padStart(2,"0")}`:`${mm} min`};
 function cssv(n){return getComputedStyle(document.documentElement).getPropertyValue(n).trim()}
@@ -903,7 +907,8 @@ function artLine(a){
   const age=a.statut==="En ligne"&&d!==null?` · <span class="${d>=S.alerteJours?"neg":""}">J+${d}</span>`:isSold(a)&&a.dateVente?` · vendu le ${fmtD(a.dateVente)}`:"";
   const act=(cls,act,ic,label)=>`<button class="sw-act ${cls}" data-act="${act}" data-id="${a.id}"><i>${ic}</i><small>${label}</small></button>`;
   let L="",R="";
-  if(a.statut==="En ligne"||a.statut==="Réservé"){ L=act("good","sell","✓","Vendu")+act("tag","annonce",IC.spark,"Annonce"); R=act("warn","drop-price","−10 %","Baisser") }
+  if(a.statut==="En ligne"){ L=act("good","sell","✓","Vendu")+act("tag","annonce",IC.spark,"Annonce"); R=act("warn","mark-reserve","🤝","Réservé") }
+  else if(a.statut==="Réservé"){ L=act("good","sell","✓","Vendu")+act("tag","annonce",IC.spark,"Annonce"); R=act("info","mark-online","↩","En ligne") }
   else if(a.statut==="En stock"||a.statut==="Retourné"){ L=act("info","publish","🚀","Publier")+act("tag","annonce",IC.spark,"Annonce"); R=act("neutral","mark-inv","✕","Invendable") }
   else if(a.statut==="Vendu"){ L=act("neutral","dup-art","⧉","Dupliquer"); R=act("violet","mark-retour","↩","Retour") }
   else { L=act("bad","del-art-now","🗑","Supprimer"); R=act("info","mark-stock","↺","En stock") }
@@ -934,7 +939,7 @@ function viewStock(){
   <div class="chips">${filters.map(f=>`<button class="chip ${ui.filter===f?"on":""}" data-act="filter" data-id="${f}">${f}<span class="n">${f==="Tous"?db.articles.length:counts(f)}</span></button>`).join("")}
     ${ui.filter==="old"?`<button class="chip on" data-act="filter" data-id="Tous">En ligne depuis longtemps ✕</button>`:ui.filter==="dispo"?`<button class="chip on" data-act="filter" data-id="Tous">Disponibles ✕</button>`:""}</div>
   ${ui.filter==="old"?`<div class="banner">Ces pièces sont en ligne depuis ${S.alerteJours} jours ou plus. Baisse le prix de 10 à 15 %, change la 1re photo ou relance l'annonce.</div>`:ui.filter==="En stock"&&L.length?`<div class="banner">Pas encore en ligne : ouvre une pièce, génère l'annonce et publie-la. Le bouton 🚀 fait ça en un geste.</div>`:ui.filter==="Réservé"&&L.length?`<div class="banner">Dès que le paiement est validé, le ✓ marque la pièce vendue.</div>`:""}
-  ${L.length&&!uiPrefs.swipeHint?`<div class="banner hint-sw" id="swipeHint">👈 Glisse une pièce vers la gauche pour la vendre, la publier ou générer l'annonce. 👉 Vers la droite pour baisser le prix ou la marquer invendable. À fond : l'action part directement. <button type="button" data-act="hint-ok">OK</button></div>`:""}
+  ${L.length&&!uiPrefs.swipeHint?`<div class="banner hint-sw" id="swipeHint">👈 Glisse une pièce vers la gauche pour la vendre, la publier ou générer l'annonce. 👉 Vers la droite pour la réserver ou la marquer invendable. À fond : l'action part directement. <button type="button" data-act="hint-ok">OK</button></div>`:""}
   <div class="list">${L.length?L.map(artLine).join(""):`<div class="empty"><h3>${db.articles.length?"Rien ici":"Ton stock est vide"}</h3><p>${db.articles.length?"Aucune pièce ne correspond à ce filtre.":"Quand ta box arrive, ouvre « Lots » et lance la réception : tu ajouteras les pièces en rafale."}</p>${db.articles.length?"":`<button class="btn pri" data-act="new-art">Ajouter une pièce</button>`}</div>`}</div>`;
 }
 
@@ -1095,7 +1100,7 @@ function markSwipeLearned(){ if(!uiPrefs.swipeHint){ uiPrefs.swipeHint=1; uiSave
 function swPeek(){ if(uiPrefs.swipeHint) return; const el=document.querySelector(".list .sw"); if(!el) return; const b=swBody(el); setTimeout(()=>{ el.classList.add("left"); el.style.setProperty("--p","1"); b.style.transition="transform .4s cubic-bezier(.22,1.1,.36,1)"; b.style.transform="translateX(-80px)"; setTimeout(()=>{ b.style.transform="translateX(0)"; setTimeout(()=>el.classList.remove("left"),400) },700) },500) }
 /* Annuler */
 let undoT=null;
-function toastUndo(msg,fn){ const t=$("#toast"); t.innerHTML=`<span>${esc(msg)}</span><button type="button" id="undoBtn">Annuler</button>`; t.classList.add("on","undo"); clearTimeout(toastT); clearTimeout(undoT);
+function toastUndo(msg,fn,link){ const t=$("#toast"); t.innerHTML=`<span>${esc(msg)}</span>${link?`<a class="tlink" href="${esc(link)}" target="_blank" rel="noopener">Ouvrir</a>`:""}<button type="button" id="undoBtn">Annuler</button>`; t.classList.add("on","undo"); clearTimeout(toastT); clearTimeout(undoT);
   $("#undoBtn").onclick=()=>{ clearTimeout(undoT); t.classList.remove("on","undo"); fn() }; undoT=setTimeout(()=>t.classList.remove("on","undo"),5000) }
 /* ---------- Tirer le panneau vers le bas pour fermer ---------- */
 const SD={on:false,y0:0,dy:0};
@@ -1148,6 +1153,7 @@ function artForm(a,opts={}){
      ${!sold?`<button type="button" class="btn sm pri" data-act="sell" data-id="${a.id}">✓ Vendu</button>`:""}
      ${a.statut==="En stock"||a.statut==="Retourné"?`<button type="button" class="btn sm" data-act="publish" data-id="${a.id}">🚀 Mettre en ligne</button>`:""}
      <button type="button" class="btn sm tag" data-act="annonce" data-id="${a.id}">${IC.spark} Annonce</button>
+     ${a.vintedUrl?`<a class="btn sm" href="${esc(a.vintedUrl)}" target="_blank" rel="noopener">↗ Vinted</a>`:""}
      <button type="button" class="btn sm" data-act="dup-art" data-id="${a.id}">Dupliquer</button>
    </div>`:""}
   <form id="artForm" data-id="${a.id||""}" data-rafale="${opts.rafale?1:0}">
@@ -1171,7 +1177,7 @@ function artForm(a,opts={}){
       <div class="fg"><label for="fDef">Défauts à signaler</label><input class="inp" id="fDef" value="${esc(a.defauts||"")}" placeholder="ex : petite bouloche sous le bras"></div>
     </details>
     <div id="sugBox" style="margin-top:12px">${sugHTML(p)}</div>
-    <div class="fg" style="margin-top:12px"><label for="fPrix">Prix affiché (€)</label><input class="inp" id="fPrix" inputmode="decimal" value="${esc(a.prixAffiche??"")}" placeholder="${p.hi}"></div>
+    <div class="fg" style="margin-top:12px"><label for="fPrix">Prix affiché (€)</label><div class="urlrow"><input class="inp" id="fPrix" inputmode="decimal" value="${esc(a.prixAffiche??"")}" placeholder="${p.hi}">${a.id&&num(a.prixAffiche)>0&&!sold?`<button type="button" class="btn sm" data-act="drop-price" data-id="${a.id}" title="Baisser de 10 %">−10 %</button>`:""}</div></div>
    </div>
    <div class="fpane" data-pane="vente" ${pane==="vente"?"":"hidden"}>
     <div class="fg"><span class="lbl">Statut</span>${optGroup("statut",STATUTS,a.statut||"En stock")}</div>
@@ -1183,6 +1189,7 @@ function artForm(a,opts={}){
       <div class="fg"><label for="fMinE">Min. envoi</label><input class="inp" id="fMinE" inputmode="numeric" value="${esc(a.minEnvoi??"")}" placeholder="${db.settings.minEnvoi}"></div></div>
     <p class="hint" style="margin-top:-6px">Frais = ce que tu paies toi (emballage, boost). Sur Vinted, l'acheteur paie la protection et le port.</p>
     <div class="fg"><label for="fCout">Coût d'achat forcé (€)</label><input class="inp" id="fCout" inputmode="decimal" value="${esc(a.coutManuel??"")}" placeholder="Auto : ${fmtE(artCost(a.id?a:{lotId:a.lotId}))}"><span class="hint">Laisse vide : le coût est calculé à partir du lot.</span></div>
+    <div class="fg"><label for="fVurl">Lien de l'annonce Vinted</label><div class="urlrow"><input class="inp" type="text" id="fVurl" inputmode="url" autocapitalize="off" autocorrect="off" value="${esc(a.vintedUrl||"")}" placeholder="https://www.vinted.fr/items/…">${a.vintedUrl?`<a class="btn sm" href="${esc(a.vintedUrl)}" target="_blank" rel="noopener">Ouvrir</a>`:""}</div><span class="hint">Colle le lien une fois l'annonce publiée : tu pourras l'ouvrir en un tap depuis Rayon.</span></div>
     <div class="fg"><label for="fNotes">Notes</label><textarea class="inp" id="fNotes" rows="2">${esc(a.notes||"")}</textarea></div>
     ${a.id?`<div class="btns" style="margin-top:10px"><button type="button" class="btn sm danger" data-act="del-art" data-id="${a.id}">Supprimer cette pièce</button></div>`:""}
    </div>
@@ -1271,7 +1278,7 @@ async function saveArtForm(form,next){
   const d={marque:val("fMarque"),type:readOpt("type"),taille:readOpt("taille"),etat:readOpt("etat"),couleur:readOpt("couleur"),matiere:val("fMatiere"),
     lotId:val("fLot"),details:readOpt("details"),mesure1:val("fM1"),mesure2:val("fM2"),defauts:val("fDef"),statut,
     prixAffiche:val("fPrix"),dateEnLigne:val("fEnLigne"),prixVente:val("fPV"),dateVente:val("fDV"),frais:val("fFrais"),
-    minAnnonce:val("fMinA"),minEnvoi:val("fMinE"),coutManuel:val("fCout"),notes:val("fNotes")};
+    minAnnonce:val("fMinA"),minEnvoi:val("fMinE"),coutManuel:val("fCout"),notes:val("fNotes"),vintedUrl:cleanUrl(val("fVurl"))};
   if(statut==="Vendu"){ if(!d.dateVente) d.dateVente=today(); if(!has(d.prixVente)) d.prixVente=d.prixAffiche; if(!(num(d.prixVente)>0)){toast("Indique le prix de vente");return} if(!d.dateEnLigne) d.dateEnLigne=d.dateVente }
   if((statut==="En ligne"||statut==="Réservé")&&!d.dateEnLigne) d.dateEnLigne=today();
   const untouched=!d.marque&&!pendingPhoto&&!has(d.prixAffiche)&&!d.taille&&!d.couleur&&!d.notes;
@@ -1308,7 +1315,9 @@ function publishSheet(a){
     ${sugHTML(p)}
     <div class="row2" style="margin-top:12px"><div class="fg"><label for="fPrix">Prix affiché (€)</label><input class="inp" id="fPrix" inputmode="decimal" value="${esc(a.prixAffiche||p.hi)}"></div>
     <div class="fg"><label for="pMin">Min. passées sur l'annonce</label><input class="inp" id="pMin" inputmode="numeric" value="${esc(a.minAnnonce??"")}" placeholder="${db.settings.minAnnonce}"></div></div>
-    <div class="btns"><button type="button" class="btn tag" data-act="annonce" data-id="${a.id}">${IC.spark} Générer l'annonce</button><button class="btn pri" type="submit">C'est en ligne</button></div></form>`);
+    <div class="fg"><label for="pVurl">Lien de l'annonce Vinted (optionnel)</label><input class="inp" type="text" id="pVurl" inputmode="url" autocapitalize="off" autocorrect="off" value="${esc(a.vintedUrl||"")}" placeholder="https://www.vinted.fr/items/…"></div>
+    <div class="btns"><button type="button" class="btn tag" data-act="annonce" data-id="${a.id}">${IC.spark} Annonce + Vinted</button><button class="btn pri" type="submit">C'est en ligne</button></div>
+    <p class="hint">« Annonce + Vinted » génère le texte, le copie et ouvre la page de dépôt Vinted : tu n'as plus qu'à coller et ajouter les photos.</p></form>`);
 }
 
 /* annonce sheet */
@@ -1325,7 +1334,9 @@ function annonceSheet(a){
       <div class="out" id="oTitre">${esc(g.titre)}</div>
       <div class="out-h"><span class="lbl">Description</span><button class="btn sm" data-act="copy" data-t="desc">${IC.copy} Copier</button></div>
       <div class="out" id="oDesc">${esc(g.desc)}\n\n${esc(g.hashtags)}</div>
-      <div class="btns" style="margin-top:12px"><button class="btn" data-act="ann-shuffle">↻ Autre version</button><button class="btn pri" data-act="copy" data-t="all">${IC.copy} Tout copier</button></div>
+      <div class="btns" style="margin-top:12px"><button class="btn" data-act="ann-shuffle">↻ Autre version</button><button class="btn" data-act="copy" data-t="all">${IC.copy} Tout copier</button></div>
+      <a class="btn pri block" style="margin-top:8px" id="vintedGo" href="${a.vintedUrl||"https://www.vinted.fr/items/new"}" target="_blank" rel="noopener" data-act="vinted-go">${a.vintedUrl?"↗ Ouvrir mon annonce Vinted":"↗ Publier sur Vinted (copie le texte)"}</a>
+      <p class="hint" style="margin:6px 0 0">${a.vintedUrl?"Le texte est copié au passage, pratique pour mettre à jour l'annonce.":"Le titre et la description sont copiés, la page de dépôt Vinted s'ouvre. Colle le texte, ajoute tes photos, publie. Puis colle le lien de l'annonce dans la fiche."}</p>
       <div class="sec tip"><b>Pour vendre plus vite</b><ul style="padding-left:18px;margin:6px 0 0">
         <li>1re photo : la pièce entière, à plat ou portée, en lumière du jour sur fond neutre.</li>
         <li>Photographie l'étiquette de marque, l'étiquette taille/matière et chaque défaut.</li>
@@ -1410,8 +1421,8 @@ function download(name,text,type){
 }
 function exportJSON(){const d=JSON.parse(JSON.stringify(real));return JSON.stringify(d,null,1)}
 function exportCSV(){
-  const head=["Réf","Lot","Marque","Type","Taille","État","Couleur","Matière","Statut","Coût","Prix affiché","Mise en ligne","Prix vendu","Date vente","Frais","Bénéfice","Jours","Minutes"];
-  const rows=real.articles.map(a=>{const l=real.lots.find(x=>x.id===a.lotId);const prev=db;db=real;const r=[a.ref,l?l.ref:"",a.marque,a.type,a.taille,a.etat,a.couleur,a.matiere,a.statut,artCost(a).toFixed(2),a.prixAffiche,a.dateEnLigne,a.prixVente,a.dateVente,a.frais,isSold(a)?artProfit(a).toFixed(2):"",daysOnline(a)??"",artMinutes(a)];db=prev;return r});
+  const head=["Réf","Lot","Marque","Type","Taille","État","Couleur","Matière","Statut","Coût","Prix affiché","Mise en ligne","Prix vendu","Date vente","Frais","Bénéfice","Jours","Minutes","Lien Vinted"];
+  const rows=real.articles.map(a=>{const l=real.lots.find(x=>x.id===a.lotId);const prev=db;db=real;const r=[a.ref,l?l.ref:"",a.marque,a.type,a.taille,a.etat,a.couleur,a.matiere,a.statut,artCost(a).toFixed(2),a.prixAffiche,a.dateEnLigne,a.prixVente,a.dateVente,a.frais,isSold(a)?artProfit(a).toFixed(2):"",daysOnline(a)??"",artMinutes(a),a.vintedUrl||""];db=prev;return r});
   return "﻿"+[head,...rows].map(r=>r.map(v=>{v=String(v??"");if(/^-?\d+\.\d+$/.test(v))v=v.replace(".",",");return /[;"\n]/.test(v)?`"${v.replace(/"/g,'""')}"`:v}).join(";")).join("\n");
 }
 function backupSheet(){
@@ -1514,7 +1525,9 @@ document.addEventListener("click",async e=>{
     case "close": closeSheet(); break;
     case "pick-brand": openPicker(setFormBrand,val("fMarque")); break;
     case "hint-ok": markSwipeLearned(); break;
-    case "drop-price": { const a=A(); if(!a) break; const old=num(a.prixAffiche); if(!(old>0)){toast("Pas de prix affiché sur cette pièce");openArt(id);break} const cost=artCost(a); let nv=Math.max(Math.ceil(cost*1.2)||1,Math.round(old*0.9)); if(nv>=old) nv=old-1; if(nv<1){toast("Prix déjà au plancher");break} a.prixAffiche=String(nv); save(); render(); toastUndo(`${fmtE0(old)} → ${fmtE0(nv)} · pense à modifier sur Vinted`,()=>{a.prixAffiche=String(old);save();render()}); break }
+    case "drop-price": { const a=A(); if(!a) break; const old=num(a.prixAffiche); if(!(old>0)){toast("Pas de prix affiché sur cette pièce");openArt(id);break} const cost=artCost(a); let nv=Math.max(Math.ceil(cost*1.2)||1,Math.round(old*0.9)); if(nv>=old) nv=old-1; if(nv<1){toast("Prix déjà au plancher");break} a.prixAffiche=String(nv); save(); render(); const fp=$("#fPrix"); if(fp) fp.value=nv; toastUndo(`${fmtE0(old)} → ${fmtE0(nv)}${a.vintedUrl?"":" · modifie-le sur Vinted"}`,()=>{a.prixAffiche=String(old);save();render()},a.vintedUrl||null); break }
+    case "mark-reserve": { const a=A(); if(!a) break; const prev=a.statut; a.statut="Réservé"; save(); render(); toastUndo(`${a.ref} réservée`,()=>{a.statut=prev;save();render()}); break }
+    case "mark-online": { const a=A(); if(!a) break; const prev=a.statut; a.statut="En ligne"; save(); render(); toastUndo(`${a.ref} remise en ligne`,()=>{a.statut=prev;save();render()}); break }
     case "mark-inv": { const a=A(); if(!a) break; const prev=a.statut; a.statut="Invendable"; save(); render(); toastUndo(`${a.ref} marquée invendable`,()=>{a.statut=prev;save();render()}); break }
     case "mark-retour": { const a=A(); if(!a) break; const prev={statut:a.statut,prixVente:a.prixVente,dateVente:a.dateVente}; a.statut="Retourné"; a.prixVente=""; a.dateVente=""; save(); render(); toastUndo(`${a.ref} marquée retournée`,()=>{Object.assign(a,prev);save();render()}); break }
     case "mark-stock": { const a=A(); if(!a) break; const prev=a.statut; a.statut="En stock"; save(); render(); toastUndo(`${a.ref} remise en stock`,()=>{a.statut=prev;save();render()}); break }
@@ -1544,6 +1557,7 @@ document.addEventListener("click",async e=>{
     case "annonce": { const a=A(); if(a) annonceSheet(a); break }
     case "ann-ton": annState.ton=t.dataset.v; annState.draw(); break;
     case "ann-shuffle": annState.seed++; annState.draw(); break;
+    case "vinted-go": { const g=annState.art&&annState.art._ann; if(g) copyText(g.titre+"\n\n"+g.desc+"\n\n"+g.hashtags); buzz(10); break }
     case "copy": { const g=annState.art&&annState.art._ann; if(!g)break; const txt=t.dataset.t==="titre"?g.titre:t.dataset.t==="desc"?g.desc+"\n\n"+g.hashtags:g.titre+"\n\n"+g.desc+"\n\n"+g.hashtags; copyText(txt); break }
     case "dup-art": { const a=A(); if(!a)break; const c=JSON.parse(JSON.stringify(a)); Object.assign(c,{id:uid(),ref:nextRef("a"),created:Date.now(),statut:"En stock",photo:false,dateEnLigne:"",dateVente:"",prixVente:"",frais:""}); db.articles.push(c); save(); toast(`${c.ref} créée`); openArt(c.id); render(); break }
     case "del-art": if(t.classList.contains("armed")){const a=A();db.articles=db.articles.filter(x=>x.id!==id);if(a&&a.photo)Photos.del(id);save();closeSheet();render();toast("Pièce supprimée")}else{t.classList.add("armed");t.textContent="Appuie encore pour supprimer"} break;
@@ -1579,7 +1593,7 @@ document.addEventListener("submit",async e=>{
   if(f.id==="artForm") return saveArtForm(f,e.submitter&&e.submitter.dataset.next==="1");
   if(f.id==="sellForm"){const a=db.articles.find(x=>x.id===f.dataset.id);if(!num(val("sPV"))){toast("Indique le prix de vente");return}
     Object.assign(a,{statut:"Vendu",prixVente:val("sPV"),dateVente:val("sDV")||today(),frais:val("sFr"),minEnvoi:val("sMin")});if(!a.dateEnLigne)a.dateEnLigne=a.dateVente;save();closeSheet();render();toast(`Vendu ! ${fmtSigned(artProfit(a))}`);buzz(25);return}
-  if(f.id==="pubForm"){const a=db.articles.find(x=>x.id===f.dataset.id);Object.assign(a,{statut:"En ligne",prixAffiche:val("fPrix"),minAnnonce:val("pMin"),dateEnLigne:a.dateEnLigne||today()});save();closeSheet();render();toast("En ligne");return}
+  if(f.id==="pubForm"){const a=db.articles.find(x=>x.id===f.dataset.id);Object.assign(a,{statut:"En ligne",prixAffiche:val("fPrix"),minAnnonce:val("pMin"),dateEnLigne:a.dateEnLigne||today(),vintedUrl:cleanUrl(val("pVurl"))||a.vintedUrl||""});save();closeSheet();render();toast("En ligne");return}
   if(f.id==="lotForm"){const id=f.dataset.id;let l=id?lotById(id):{id:uid(),ref:nextRef("l")};
     Object.assign(l,{fournisseur:val("lF")||"Lot",date:val("lD"),nom:val("lN"),prix:val("lP"),reduction:val("lR"),port:val("lPo"),poids:val("lK"),pieces:val("lPc"),facture:val("lFa"),statut:readOpt("lstatut")||"En route",notes:val("lNo")});
     if(!id)db.lots.push(l);save();closeSheet();render();toast(id?"Lot modifié":`${l.ref} créé`);return}
