@@ -305,6 +305,8 @@ a.btn{text-decoration:none}
 .sheet-foot .btn{flex:1}
 details.more summary{cursor:pointer;font-size:13px;font-weight:700;color:var(--accent);padding:6px 0}
 details.more{border:1px dashed var(--line);border-radius:12px;padding:6px 12px;margin-bottom:14px}
+details.prec{border-color:var(--accent);background:var(--accent-soft)} details.prec summary{color:var(--accent)}
+.warnp{color:var(--warn);font-weight:600;margin:0 0 6px} .tlink2{color:var(--accent);font-weight:700;text-decoration:none}
 /* picker & price card */
 .pickbtn{display:flex;align-items:center;gap:8px;width:100%;min-height:46px;border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:6px 12px;cursor:pointer;text-align:left;font-size:16px}
 .pickbtn.empty .pb-main{color:var(--muted);font-weight:500}
@@ -329,7 +331,7 @@ details.more{border:1px dashed var(--line);border-radius:12px;padding:6px 12px;m
 .opt.cols .sw{width:14px;height:14px;border-radius:50%;border:1px solid rgba(0,0,0,.15);flex:none}
 .opt.cols button.on .sw{border-color:rgba(255,255,255,.6)}
 .opt .more-types{border-style:dashed;color:var(--accent)}
-.opt .rest{display:contents}
+.opt .gh{flex-basis:100%;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-top:6px;font-style:normal}
 .pk-new{border:1px dashed var(--line);border-radius:12px;padding:10px 12px;margin-top:8px}
 .pk-tiers{display:flex;flex-wrap:wrap;gap:6px}
 .pk-tiers .tier{border:0;cursor:pointer;padding:8px 12px;font-size:13px}
@@ -404,7 +406,25 @@ const TYPES = {
   "Pantalon":{base:15,g:"m",tag:"pantalon",warm:0},"Jean":{base:18,g:"m",tag:"jean",warm:0},"Jogging":{base:14,g:"m",tag:"jogging",warm:1},"Legging":{base:10,g:"m",tag:"legging",warm:0},"Short":{base:10,g:"m",tag:"short",warm:0},"Survêtement":{base:30,g:"m",tag:"survetement",warm:1},
   "Robe":{base:16,g:"f",tag:"robe",warm:0},"Jupe":{base:12,g:"f",tag:"jupe",warm:0},"Combinaison":{base:16,g:"f",tag:"combinaison",warm:0},"Maillot de bain":{base:12,g:"m",tag:"maillot",warm:0},"Lingerie":{base:8,g:"f",tag:"lingerie",warm:0},"Pyjama":{base:10,g:"m",tag:"pyjama",warm:0},
   "Chaussures":{base:25,g:"fp",tag:"chaussures",warm:0},"Sac":{base:25,g:"m",tag:"sac",warm:0},"Portefeuille":{base:15,g:"m",tag:"portefeuille",warm:0},"Ceinture":{base:10,g:"f",tag:"ceinture",warm:0},"Écharpe":{base:10,g:"f",tag:"echarpe",warm:1},"Bonnet / Casquette":{base:9,g:"m",tag:"casquette",warm:0},"Lunettes":{base:20,g:"fp",tag:"lunettes",warm:0},"Montre":{base:40,g:"f",tag:"montre",warm:0},"Bijou":{base:12,g:"m",tag:"bijou",warm:0},
-  "Accessoire":{base:10,g:"m",tag:"accessoire",warm:0},"Autre":{base:12,g:"m",tag:"mode",warm:0}
+  "Accessoire":{base:10,g:"m",tag:"accessoire",warm:0},
+  /* hauts & vestes */
+  "Surchemise":{base:28,g:"f",tag:"surchemise",warm:1},"Pull col roulé":{base:22,g:"m",tag:"colroule",warm:1},"Bodywarmer":{base:28,g:"m",tag:"bodywarmer",warm:1},
+  "Parka":{base:52,g:"f",tag:"parka",warm:1},"Veste polaire":{base:24,g:"f",tag:"polaire",warm:1},"Veste en jean":{base:33,g:"f",tag:"vestejean",warm:0},
+  "Veste en cuir":{base:60,g:"f",tag:"cuir",warm:1},"Coupe-vent":{base:30,g:"m",tag:"coupevent",warm:0},"Imperméable":{base:35,g:"m",tag:"impermeable",warm:0},"Poncho / Cape":{base:26,g:"m",tag:"poncho",warm:1},
+  /* bas */
+  "Chino":{base:22,g:"m",tag:"chino",warm:0},"Pantalon cargo":{base:22,g:"m",tag:"cargo",warm:0},"Pantalon de costume":{base:22,g:"m",tag:"pantalon",warm:0},"Bermuda":{base:13,g:"m",tag:"bermuda",warm:0},"Salopette":{base:28,g:"f",tag:"salopette",warm:0},
+  /* chaussures */
+  "Baskets":{base:35,g:"fp",tag:"baskets",warm:0},"Running":{base:33,g:"fp",tag:"running",warm:0},"Bottes / Bottines":{base:44,g:"fp",tag:"bottes",warm:1},"Chaussures de ville":{base:44,g:"fp",tag:"chaussuresdeville",warm:0},
+  "Mocassins":{base:40,g:"fp",tag:"mocassins",warm:0},"Escarpins":{base:35,g:"fp",tag:"escarpins",warm:0},"Sandales":{base:22,g:"fp",tag:"sandales",warm:0},"Espadrilles":{base:18,g:"fp",tag:"espadrilles",warm:0},"Claquettes / Tongs":{base:11,g:"fp",tag:"claquettes",warm:0},
+  /* sacs & maroquinerie */
+  "Sac à main":{base:33,g:"m",tag:"sacamain",warm:0},"Sac à dos":{base:26,g:"m",tag:"sacados",warm:0},"Sacoche / Besace":{base:26,g:"f",tag:"sacoche",warm:0},"Sac banane":{base:18,g:"f",tag:"banane",warm:0},
+  "Pochette":{base:18,g:"f",tag:"pochette",warm:0},"Tote bag":{base:9,g:"m",tag:"totebag",warm:0},"Valise / Bagage":{base:40,g:"f",tag:"valise",warm:0},"Porte-cartes":{base:11,g:"m",tag:"portecartes",warm:0},
+  /* accessoires */
+  "Cravate":{base:11,g:"f",tag:"cravate",warm:0},"Nœud papillon":{base:7,g:"m",tag:"noeudpapillon",warm:0},"Foulard / Carré":{base:15,g:"m",tag:"foulard",warm:0},"Chapeau":{base:13,g:"m",tag:"chapeau",warm:0},
+  "Gants":{base:11,g:"fp",tag:"gants",warm:1},"Bretelles":{base:9,g:"fp",tag:"bretelles",warm:0},"Chaussettes":{base:4,g:"fp",tag:"chaussettes",warm:0},"Boutons de manchette":{base:11,g:"fp",tag:"boutonsdemanchette",warm:0},
+  "Parapluie":{base:9,g:"m",tag:"parapluie",warm:0},"Lunettes de soleil":{base:22,g:"fp",tag:"lunettesdesoleil",warm:0},"Collier":{base:13,g:"m",tag:"collier",warm:0},"Bracelet":{base:11,g:"m",tag:"bracelet",warm:0},"Bague":{base:11,g:"f",tag:"bague",warm:0},
+  /* autres */
+  "Maillot de foot":{base:16,g:"m",tag:"maillotfoot",warm:0},"Peignoir":{base:13,g:"m",tag:"peignoir",warm:0},"Autre":{base:12,g:"m",tag:"mode",warm:0}
 };
 const ETATS = {"Neuf avec étiquette":{m:1.35,d:"jamais porté, étiquette encore attachée",clean:1},"Neuf sans étiquette":{m:1.2,d:"jamais porté",clean:1},
   "Très bon état":{m:1,d:"très peu porté, aucun défaut visible",clean:1},"Bon état":{m:.8,d:"porté avec soin, légers signes d'usure",clean:0},"Satisfaisant":{m:.6,d:"signes d'usure visibles, voir photos",clean:0}};
@@ -432,7 +452,41 @@ const RF_EXP={1:1,2:1,3:1,4:.8,5:.6};
 const TYPE_RF={"Sweat":1,"Hoodie":1.1,"Pull":1,"Gilet / Zip":1.05,"Cardigan":1,"T-shirt":.5,"Polo":.75,"Chemise":.9,"Blouse":.8,"Top":.5,"Débardeur":.4,"Body":.5,
   "Veste":1.8,"Blouson":1.8,"Doudoune":2.6,"Manteau":2.6,"Trench":2.4,"Blazer":1.8,"Costume":3,"Pantalon":1,"Jean":1.2,"Jogging":.9,"Legging":.6,"Short":.6,"Survêtement":1.6,
   "Robe":1.2,"Jupe":.8,"Combinaison":1.2,"Maillot de bain":.6,"Lingerie":.5,"Pyjama":.6,"Chaussures":1.6,"Sac":1.5,"Portefeuille":.8,"Ceinture":.6,"Écharpe":.6,"Bonnet / Casquette":.45,
-  "Lunettes":1.2,"Montre":2,"Bijou":.6,"Accessoire":.6,"Autre":.8};
+  "Lunettes":1.2,"Montre":2,"Bijou":.6,"Accessoire":.6,"Autre":.8,
+  "Surchemise":1.3,"Pull col roulé":1.05,"Bodywarmer":1.3,"Parka":2.4,"Veste polaire":1.1,"Veste en jean":1.5,"Veste en cuir":2.8,"Coupe-vent":1.4,"Imperméable":1.6,"Poncho / Cape":1.2,
+  "Chino":1,"Pantalon cargo":1,"Pantalon de costume":1,"Bermuda":.6,"Salopette":1.3,
+  "Baskets":1.6,"Running":1.5,"Bottes / Bottines":2,"Chaussures de ville":2,"Mocassins":1.8,"Escarpins":1.6,"Sandales":1,"Espadrilles":.8,"Claquettes / Tongs":.5,
+  "Sac à main":1.5,"Sac à dos":1.2,"Sacoche / Besace":1.2,"Sac banane":.8,"Pochette":.8,"Tote bag":.4,"Valise / Bagage":1.8,"Porte-cartes":.5,
+  "Cravate":.3,"Nœud papillon":.2,"Foulard / Carré":.7,"Chapeau":.6,"Gants":.5,"Bretelles":.4,"Chaussettes":.15,"Boutons de manchette":.5,"Parapluie":.4,"Lunettes de soleil":1.2,"Collier":.6,"Bracelet":.5,"Bague":.5,
+  "Maillot de foot":.7,"Peignoir":.6};
+/* groupes pour le sélecteur */
+const TYPE_GROUPS=[
+  ["Hauts",["Sweat","Hoodie","Pull","Pull col roulé","Gilet / Zip","Cardigan","T-shirt","Polo","Chemise","Surchemise","Blouse","Top","Débardeur","Body","Maillot de foot"]],
+  ["Vestes & manteaux",["Veste","Blouson","Veste en jean","Veste en cuir","Veste polaire","Bodywarmer","Coupe-vent","Imperméable","Doudoune","Parka","Manteau","Trench","Poncho / Cape","Blazer","Costume"]],
+  ["Bas",["Jean","Pantalon","Chino","Pantalon cargo","Pantalon de costume","Jogging","Short","Bermuda","Legging","Salopette","Survêtement"]],
+  ["Robes & jupes",["Robe","Jupe","Combinaison"]],
+  ["Chaussures",["Baskets","Running","Chaussures de ville","Mocassins","Bottes / Bottines","Escarpins","Sandales","Espadrilles","Claquettes / Tongs","Chaussures"]],
+  ["Sacs & maroquinerie",["Sac","Sac à main","Sac à dos","Sacoche / Besace","Sac banane","Pochette","Tote bag","Valise / Bagage","Portefeuille","Porte-cartes","Ceinture"]],
+  ["Accessoires",["Cravate","Nœud papillon","Boutons de manchette","Bretelles","Écharpe","Foulard / Carré","Bonnet / Casquette","Chapeau","Gants","Chaussettes","Lunettes de soleil","Lunettes","Montre","Collier","Bracelet","Bague","Bijou","Parapluie","Accessoire"]],
+  ["Autres",["Maillot de bain","Lingerie","Pyjama","Peignoir","Autre"]]
+];
+const DEFAUTS={"Bouloché":.9,"Tache légère":.85,"Tache visible":.7,"Petit trou / accroc":.75,"Délavé / décoloré":.85,"Usure col / poignets":.85,"Fermeture / bouton abîmé":.8,"Étiquette coupée":.95,"Odeur":.8,"Semelle usée":.8,"Retouché / ourlet":.9};
+const COLOR_M={"Noir":1.04,"Bleu marine":1.03,"Anthracite":1.02,"Gris":1.01,"Blanc":1,"Écru":1,"Beige":1,"Camel":1.02,"Kaki":1.01,"Bordeaux":1,"Marron":.98,"Chocolat":.98,"Jaune":.94,"Orange":.93,"Rose":.96,"Fuchsia":.93,"Violet":.95,"Turquoise":.95,"Multicolore":.95,"Doré":.95,"Argenté":.95};
+const SHOE_SIZE_M={P35:.9,P36:.93,P37:.95,P38:.97,P39:1,P40:1.05,P41:1.07,P42:1.08,P43:1.08,P44:1.05,P45:1,P46:.92};
+const GENRE_M={Homme:1,Femme:1,Enfant:.5,Unisexe:1};
+/* modèles iconiques : un mot-clé dans « Modèle / collection » fait bouger la cote */
+const ICONS=[
+  [/big ?pony/i,1.25,"Big Pony"],[/\b(bear|ours|teddy bear)\b/i,1.8,"Polo Bear"],[/reverse ?weave/i,1.35,"Reverse Weave"],[/l\.?12\.?12/i,1.1,"L.12.12"],[/\b501\b/i,1.2,"501"],[/\b(nuptse|1996|700)\b/i,1.6,"Nuptse"],
+  [/tech ?fleece/i,1.5,"Tech Fleece"],[/firebird|beckenbauer|challenger|superstar track/i,1.3,"Adidas iconique"],[/\b(detroit|michigan|active ?jacket|chore)\b/i,1.4,"Carhartt iconique"],[/box ?logo|bogo/i,2.2,"Box Logo"],
+  [/ghost|shadow ?project|marina/i,1.5,"Stone Island série spéciale"],[/nova ?check|house ?check/i,1.3,"Burberry check"],[/\b(rugby)\b/i,1.1,"Rugby"],[/\b(90s?|80s?|y2k|vintage)\b/i,1.12,"Vintage"],
+  [/limited|limitée|collab|capsule|\bx\b/i,1.2,"Édition spéciale / collab"],[/made in (usa|u\.s\.a|france|ital|england|uk|japan|japon|portugal|scotland|écosse|ecosse)/i,1.08,"Fabrication d'origine"],
+  [/cachemire|cashmere/i,1.3,"Cachemire"],[/varsity|teddy\b/i,1.1,"Varsity"],[/harrington/i,1.05,"Harrington"],[/(quarter|half|demi)[- ]?zip/i,1.08,"Demi-zip"],[/\bma-?1\b|bomber/i,1.05,"Bomber"],
+  [/\b(rare|collector|grail|deadstock|ds)\b/i,1.15,"Pièce rare"],[/perfecto|618|613|one ?star/i,1.15,"Perfecto"],[/gore-?tex|goretex/i,1.2,"Gore-Tex"],[/down|duvet|plume/i,1.1,"Duvet"],[/selvedge|selvage|japan denim/i,1.25,"Selvedge"],
+  [/air ?max|dunk|jordan|air ?force|samba|gazelle|campus|spezial|550|574|990|992|993|1906|xt-?6|speedcat/i,1.2,"Modèle recherché"]
+];
+function iconFactor(txt){ txt=(txt||"").trim(); if(!txt) return {m:1,hits:[]}; let m=1; const hits=[]; for(const [re,f,label] of ICONS){ if(re.test(txt)){m*=f;hits.push(label)} } return {m:Math.min(2.2,m),hits} }
+function parseComps(txt){ return String(txt||"").replace(/,/g,".").match(/\d+(?:\.\d+)?/g)?.map(Number).filter(v=>v>=1&&v<5000)||[] }
+function median(xs){ const a=[...xs].sort((x,y)=>x-y); const n=a.length; return n?(n%2?a[(n-1)/2]:(a[n/2-1]+a[n/2])/2):NaN }
 function retailOf(br,type){ const t=br?br.tier:2, adj=br?br.adj:.6; return TIER_RP[t]*adj*Math.pow(TYPE_RF[type]||.8,RF_EXP[t]) }
 const TIER_LABEL={1:"Fast fashion",2:"Grand public",3:"Milieu de gamme",4:"Premium",5:"Luxe"};
 const BRAND_LIST=[];const BRANDS={};
@@ -704,7 +758,7 @@ B("Berghaus",3,.9,"outdoor",["l'outdoor britannique","robuste et pratique"],["be
 B("Odlo",3,.85,"sport technique",["la technique suisse","idéal en sous-couche"],["odlo","sport"],{},"Suisse");
 B("Icebreaker",4,1,"mérinos",["le mérinos néo-zélandais","une matière exceptionnelle"],["icebreaker","merinos","outdoor"],{Pull:1.2,"T-shirt":1.3},"Nouvelle-Zélande");
 // --- Luxe & maisons
-B("Hermès|Hermes",5,1.6,"luxe absolu",["le summum du luxe français","une pièce d'exception"],["hermes","luxe"],{Sac:1.5,Écharpe:1.5,Ceinture:1.4},"France",1);
+B("Hermès|Hermes",5,1.2,"luxe absolu",["le summum du luxe français","une pièce d'exception"],["hermes","luxe"],{Sac:1.5,Écharpe:1.5,Ceinture:1.4},"France",1);
 B("Chanel",5,1.5,"luxe",["l'icône de la haute couture","une pièce de légende"],["chanel","luxe"],{Sac:1.5,Veste:1.3},"France",1);
 B("Bottega Veneta",5,1.2,"luxe discret",["l'intrecciato iconique","le luxe discret italien"],["bottegaveneta","quietluxury"],{Sac:1.4},"Italie");
 B("Balmain",5,1,"luxe rock",["l'allure Balmain","une pièce forte"],["balmain","luxe"],{Blazer:1.3},"France");
@@ -994,23 +1048,29 @@ const SIZE_M={XXS:.85,XS:.9,S:.98,M:1.05,L:1.05,XL:1,XXL:.92,"3XL":.85,"4XL":.8,
 const MAT_M={"Cachemire":1.45,"Mohair":1.2,"Alpaga":1.25,"Angora":1.15,"Laine mérinos":1.2,"Laine":1.1,"Soie":1.3,"Cuir":1.45,"Daim":1.3,"Gore-Tex":1.3,"Tweed":1.15,"Lin":1.05,"Coton bio":1.03,"Lyocell / Tencel":1.05,"Modal":1.03,"Velours côtelé":1.05,"Satin":1.05,"Dentelle":1.05,"Fausse fourrure":1.05,"Cuir synthétique":.9,"Polyester":.95,"Acrylique":.85,"Coton / polyester":.97};
 const DET_M={"Vintage":1.1,"Grand logo":1.08,"Made in Europe":1.08,"Made in France":1.1,"Édition limitée":1.2,"Neuf jamais porté":1.1,"Épais et chaud":1.04,"Col camionneur":1.05,"Oversize":1.03,"Capuche":1.02,"Zippé":1.02,"Doublé":1.03,"Imperméable":1.05,"Col V":.98,"Sans manches":.95};
 function seasonFactor(type){ const t=TYPES[type]; if(!t) return 1; const m=new Date().getMonth()+1; const cold=m>=10||m<=2, shoulder=m===3||m===9, hot=m>=5&&m<=7;
-  const summer={"T-shirt":1,"Short":1,"Maillot de bain":1,"Débardeur":1,"Top":1,"Robe":1,"Jupe":1,"Combinaison":1}[type];
+  const summer={"T-shirt":1,"Short":1,"Bermuda":1,"Maillot de bain":1,"Débardeur":1,"Top":1,"Robe":1,"Jupe":1,"Combinaison":1,"Sandales":1,"Espadrilles":1,"Claquettes / Tongs":1,"Lunettes de soleil":1}[type];
   if(t.warm) return cold?1.1:shoulder?1.03:hot?.85:.95; if(summer) return hot?1.08:cold?.9:1; return 1 }
 function nice(v){ v=Math.max(2,v); if(v<15) return Math.round(v); if(v<40) return Math.round(v); return Math.round(v/5)*5 }
 function estimate(a){
   const type=TYPES[a.type]?a.type:"Autre", br=brandOf(a.marque), custom=!!(a.marque&&!br);
   const F=[]; // facteurs expliqués
-  const tier=br?br.tier:2, retail=br?retailOf(br,type):TIER_RP[2]*(custom?.8:.6)*(TYPE_RF[type]||.8);
-  F.push({k:`${br?`${br.name} · ${TIER_LABEL[br.tier]}`:custom?`${a.marque} · marque hors catalogue`:"Marque non renseignée"} · ${a.type||"catégorie ?"} neuf ≈`,m:null,base:retail});
+  const tier=br?br.tier:2; const neufOK=num(a.prixNeuf)>0; const retail=neufOK?num(a.prixNeuf):br?retailOf(br,type):TIER_RP[2]*(custom?.8:.6)*(TYPE_RF[type]||.8);
+  F.push({k:`${br?`${br.name} · ${TIER_LABEL[br.tier]}`:custom?`${a.marque} · marque hors catalogue`:"Marque non renseignée"} · ${a.type||"catégorie ?"} neuf ${neufOK?"(renseigné)":"≈"}`,m:null,base:retail});
   const ret=RET[tier]; let p=retail*ret;
   F.push({k:`Cote seconde main ${TIER_LABEL[tier].toLowerCase()} (très bon état)`,m:null,base:p});
   if(br&&br.hot[type]){p*=br.hot[type];F.push({k:`${br.name} très recherché en ${type.toLowerCase()}`,m:br.hot[type]})}
   const c=COND[a.etat]||1; if(a.etat){p*=c;F.push({k:"État : "+a.etat.toLowerCase(),m:c})}
   const sz=SIZE_M[a.taille]; if(sz&&sz!==1){p*=sz;F.push({k:"Taille "+a.taille+(sz>1?" (très demandée)":" (moins demandée)"),m:sz})}
-  const NO_MAT={"Chaussures":1,"Sac":1,"Portefeuille":1,"Ceinture":1}; const mm=NO_MAT[type]?1:MAT_M[a.matiere]; if(mm&&mm!==1){p*=mm;F.push({k:"Matière : "+a.matiere.toLowerCase(),m:mm})}
+  const NO_MAT=Object.fromEntries(TYPE_GROUPS.filter(g=>["Chaussures","Sacs & maroquinerie","Accessoires"].includes(g[0])).flatMap(g=>g[1]).map(t=>[t,1])); NO_MAT["Sac"]=1; const mm=NO_MAT[type]?1:MAT_M[a.matiere]; if(mm&&mm!==1){p*=mm;F.push({k:"Matière : "+a.matiere.toLowerCase(),m:mm})}
   (a.details||[]).forEach(d=>{const x=DET_M[d];if(x&&x!==1){p*=x;F.push({k:d,m:x})}});
   const sf=seasonFactor(type); if(Math.abs(sf-1)>.01){p*=sf;F.push({k:sf>1?"Pleine saison":"Hors saison",m:sf})}
-  if((a.defauts||"").trim()){p*=.88;F.push({k:"Défaut signalé",m:.88})}
+  const gm=GENRE_M[a.genre]||1; if(gm!==1){p*=gm;F.push({k:"Pièce "+a.genre.toLowerCase(),m:gm})}
+  const ic=iconFactor(a.modele); if(ic.m!==1){p*=ic.m;F.push({k:"Modèle : "+ic.hits.join(", "),m:ic.m})}
+  const cm=COLOR_M[a.couleur]; if(cm&&cm!==1){p*=cm;F.push({k:"Couleur "+a.couleur.toLowerCase()+(cm>1?" (passe-partout)":" (plus difficile)"),m:cm})}
+  const ssz=SHOE_SIZE_M[a.taille]; if(ssz&&ssz!==1&&/P\d\d/.test(a.taille||"")){p*=ssz;F.push({k:"Pointure "+a.taille.slice(1)+(ssz>1?" (très demandée)":" (moins demandée)"),m:ssz})}
+  let dm=1; (a.defs||[]).forEach(d=>{dm*=DEFAUTS[d]||1}); dm=Math.max(.5,dm);
+  if((a.defs||[]).length){p*=dm;F.push({k:"Défauts : "+a.defs.map(x=>x.toLowerCase()).join(", "),m:dm})}
+  else if((a.defauts||"").trim()){p*=.9;F.push({k:"Défaut signalé",m:.9})}
   // recalage sur tes ventes
   let own=null, ownN=0, calib=1;
   if(a.marque){
@@ -1022,19 +1082,28 @@ function estimate(a){
       if(ratios.length>=2){const r=sum(ratios)/ratios.length;calib=Math.min(1.6,Math.max(.6,r));const w=ratios.length/(ratios.length+3);calib=1+(calib-1)*w;if(Math.abs(calib-1)>.02){p*=calib;F.push({k:`Tes ventes ${brandName(a.marque)} (${ratios.length})`,m:calib})}}
     }
   }
+  if(calib===1){ // pas d'historique sur cette marque : on se cale sur ta gamme, puis sur la catégorie
+    const soldAll=db.articles.filter(x=>isSold(x)&&x.id!==a.id&&num(x.prixVente)>0);
+    const pools=[[br?soldAll.filter(x=>{const b=brandOf(x.marque);return b&&b.tier===br.tier}):[],`Tes ventes ${br?TIER_LABEL[br.tier].toLowerCase():""}`],[soldAll.filter(x=>x.type===a.type),`Tes ventes en ${(a.type||"").toLowerCase()}`]];
+    for(const [pool,label] of pools){ if(pool.length<3) continue; const ratios=pool.map(x=>{const e=estimateRaw(x);return e>0?num(x.prixVente)/e:null}).filter(v=>v&&isFinite(v)); if(ratios.length<3) continue;
+      let r=Math.min(1.6,Math.max(.6,sum(ratios)/ratios.length)); const w=ratios.length/(ratios.length+4); r=1+(r-1)*w; if(Math.abs(r-1)>.02){p*=r;calib=r;F.push({k:`${label} (${ratios.length})`,m:r})} break }
+  }
   let fair=p;
+  const comps=parseComps(a.comps); let compsMed=NaN;
+  if(comps.length){ compsMed=median(comps)*.9; const w=comps.length/(comps.length+1.5); fair=fair*(1-w)+compsMed*w; F.push({k:`${comps.length} annonce${comps.length>1?"s":""} similaire${comps.length>1?"s":""} vue${comps.length>1?"s":""} (médiane ${fmtE0(median(comps))}, −10 % de négo)`,m:null,base:compsMed}) }
   if(own&&ownN){const w=ownN/(ownN+2);fair=fair*(1-w)+own*w;F.push({k:`Moyenne de tes ${ownN} vente(s) ${a.type} ${brandName(a.marque)} : ${fmtE0(own)}`,m:null,note:true})}
   const cost=artCost(a);
   const mid=nice(fair); let list=nice(fair*1.15), quick=nice(fair*.8); const high=nice(fair*1.3); if(list<=mid) list=mid+1; if(quick>=mid&&mid>3) quick=mid-1;
   let floor=nice(Math.max(fair*.7, cost>0?cost*1.3+1:0)); if(floor>quick) floor=quick;
-  let conf=0; if(br)conf+=br.custom?1.2:2; else if(custom)conf+=0; if(a.type)conf+=1; if(a.etat)conf+=1; if(a.taille)conf+=1; if(a.matiere)conf+=.5; if(ownN)conf+=1.5;
+  let conf=0; if(br)conf+=br.custom?1.2:2; else if(custom)conf+=0; if(a.type)conf+=1; if(a.etat)conf+=1; if(a.taille)conf+=1; if(a.matiere)conf+=.5; if(ownN)conf+=1.5; if(neufOK)conf+=1.5; if(comps.length)conf+=comps.length>=3?3:1.5;
   const confL=conf>=5.5?"haute":conf>=3.5?"moyenne":"faible";
   const margin=cost>0?mid-cost:null, mult=cost>0?mid/cost:null;
-  return {list,mid,quick,high,floor,fair,F,own,ownN,conf:confL,known:!!br,custom,cost,margin,mult,brand:br,retail};
+  return {list,mid,quick,high,floor,fair,F,own,ownN,conf:confL,known:!!br,custom,cost,margin,mult,brand:br,retail,comps:comps.length,neufOK,vintedQ:[brandName(a.marque),a.modele,a.type].filter(Boolean).join(" ")};
 }
+const NO_MAT_RAW=Object.fromEntries([...TYPE_GROUPS.filter(g=>["Chaussures","Sacs & maroquinerie","Accessoires"].includes(g[0])).flatMap(g=>g[1]),"Sac"].map(t=>[t,1]));
 function estimateRaw(a){ // estimation sans recalage ni historique (pour la calibration)
   const type=TYPES[a.type]?a.type:"Autre", br=brandOf(a.marque); let p=(br?retailOf(br,type):TIER_RP[2]*.8*(TYPE_RF[type]||.8))*RET[br?br.tier:2];
-  if(br&&br.hot[type])p*=br.hot[type]; p*=COND[a.etat]||1; p*=SIZE_M[a.taille]||1; if(!{"Chaussures":1,"Sac":1,"Portefeuille":1,"Ceinture":1}[type]) p*=MAT_M[a.matiere]||1; (a.details||[]).forEach(d=>{p*=DET_M[d]||1}); return p }
+  if(br&&br.hot[type])p*=br.hot[type]; p*=COND[a.etat]||1; p*=SIZE_M[a.taille]||1; if(!NO_MAT_RAW[type]) p*=MAT_M[a.matiere]||1; (a.details||[]).forEach(d=>{p*=DET_M[d]||1}); return p }
 function suggestPrice(a){ const e=estimate(a); return {lo:e.quick,mid:e.mid,hi:e.list,known:e.known,own:e.own,ownN:e.ownN,e} }
 
 /* ================= state ================= */
@@ -1232,7 +1301,7 @@ function genAnnonce(a,ton,seed){
   const keyDet=det.find(d=>["Col camionneur","Capuche","Zippé","Col V","Grand logo","Logo brodé","Vintage"].includes(d));
   const month=new Date().getMonth()+1, coldSeason=month>=9||month<=3;
   // title
-  const parts=[type==="Gilet / Zip"?(det.includes("Zippé")?"Zip":"Gilet"):type, marque];
+  const parts=[type==="Gilet / Zip"?(det.includes("Zippé")?"Zip":"Gilet"):type, marque, (a.modele||"").trim()];
   if(keyDet&&keyDet!=="Logo brodé"&&ton!=="express") parts.push(keyDet.toLowerCase());
   if(coul) parts.push(coul);
   if(ton==="pepite"&&det.includes("Vintage")&&!parts.includes("vintage")) parts.push("vintage");
@@ -1247,7 +1316,7 @@ function genAnnonce(a,ton,seed){
   const matLine=a.matiere?`${a.matiere}`:"";
   const fitLine=det.includes("Oversize")?"coupe oversize":det.includes("Coupe ajustée")?"coupe ajustée":"";
   const mes=[]; if(has(a.mesure1)) mes.push(`largeur à plat ${num(a.mesure1)} cm`); if(has(a.mesure2)) mes.push(`longueur ${num(a.mesure2)} cm`);
-  const defaut=(a.defauts||"").trim();
+  const defaut=[(a.defs||[]).map(x=>x.toLowerCase()).join(", "),(a.defauts||"").trim()].filter(Boolean).join(" — ");
   const extraDet=det.filter(d=>!["Oversize","Coupe ajustée"].includes(d));
   const lotLine=S.remiseLot>0?`-${S.remiseLot} % dès 2 articles achetés ensemble, jette un œil à mon dressing.`:"Jette un œil à mon dressing, je fais des lots.";
   if(ton==="pepite"){
@@ -1671,7 +1740,7 @@ function artForm(a,opts={}){
     <div class="fg" style="margin-top:14px"><span class="lbl">Marque</span>
       <input type="hidden" id="fMarque" value="${esc(a.marque||"")}">
       <button type="button" class="pickbtn ${a.marque?"":"empty"}" id="fMarqueBtn" data-act="pick-brand">${brandBtnHTML(a.marque)}</button></div>
-    <div class="fg"><span class="lbl">Type</span>${(()=>{const main=["Sweat","Hoodie","Pull","Gilet / Zip","T-shirt","Polo","Chemise","Veste","Doudoune","Manteau","Blazer","Jean","Pantalon","Short","Robe","Jupe","Chaussures","Sac"];const rest=Object.keys(TYPES).filter(t=>!main.includes(t));const openRest=a.type&&rest.includes(a.type);return `<div class="opt" data-opt="type">${main.map(v=>`<button type="button" data-v="${esc(v)}" class="${a.type===v?"on":""}">${esc(v)}</button>`).join("")}<button type="button" class="more-types" data-act="more-types" ${openRest?"hidden":""}>Plus…</button><span class="rest" ${openRest?"":"hidden"}>${rest.map(v=>`<button type="button" data-v="${esc(v)}" class="${a.type===v?"on":""}">${esc(v)}</button>`).join("")}</span></div>`})()}</div>
+    <div class="fg"><span class="lbl">Type</span>${(()=>{const main=["Sweat","Hoodie","Pull","Gilet / Zip","T-shirt","Polo","Chemise","Veste","Doudoune","Manteau","Blazer","Jean","Pantalon","Short","Robe","Jupe","Chaussures","Sac"];const rest=TYPE_GROUPS.flatMap(g=>g[1]).filter(t=>!main.includes(t));const openRest=a.type&&rest.includes(a.type);return `<div class="opt" data-opt="type">${main.map(v=>`<button type="button" data-v="${esc(v)}" class="${a.type===v?"on":""}">${esc(v)}</button>`).join("")}<button type="button" class="more-types" data-act="more-types" ${openRest?"hidden":""}>Plus…</button>${TYPE_GROUPS.map(([gn,list])=>{const l=list.filter(v=>!main.includes(v));return l.length?`<i class="gh rest" ${openRest?"":"hidden"}>${gn}</i>${l.map(v=>`<button type="button" data-v="${esc(v)}" class="rest ${a.type===v?"on":""}" ${openRest?"":"hidden"}>${esc(v)}</button>`).join("")}`:""}).join("")}</div>`})()}</div>
     <div class="fg"><span class="lbl">Taille</span>${optGroup("taille",TAILLES,a.taille)}</div>
     <div class="fg"><span class="lbl">État</span>${optGroup("etat",Object.keys(ETATS),a.etat)}</div>
     <div class="fg"><span class="lbl">Couleur</span><div class="opt cols" data-opt="couleur">${COULEURS.map(c=>`<button type="button" data-v="${esc(c)}" class="${a.couleur===c?"on":""}"><i class="sw" style="background:${COL_HEX[c]||"#888"}"></i>${esc(c)}</button>`).join("")}</div></div>
@@ -1681,10 +1750,17 @@ function artForm(a,opts={}){
       <div class="fg" style="margin-top:10px"><span class="lbl">Détails</span>${optGroup("details",DETAILS,a.details,true)}</div>
       <div class="row2"><div class="fg"><label for="fM1">Largeur à plat (cm)</label><input class="inp" id="fM1" inputmode="decimal" value="${esc(a.mesure1??"")}"></div>
         <div class="fg"><label for="fM2">Longueur (cm)</label><input class="inp" id="fM2" inputmode="decimal" value="${esc(a.mesure2??"")}"></div></div>
-      <div class="fg"><label for="fDef">Défauts à signaler</label><input class="inp" id="fDef" value="${esc(a.defauts||"")}" placeholder="ex : petite bouloche sous le bras"></div>
+      <div class="fg"><label for="fDef">Précision sur les défauts (texte libre)</label><input class="inp" id="fDef" value="${esc(a.defauts||"")}" placeholder="ex : petite bouloche sous le bras"></div>
+    </details>
+    <details class="more prec" ${a.modele||has(a.prixNeuf)||a.comps||(a.defs||[]).length||(a.genre&&a.genre!=="Homme")?"open":""}><summary>🎯 Affiner le prix (modèle, prix neuf, annonces similaires)</summary>
+      <div class="fg" style="margin-top:10px"><label for="fModele">Modèle / collection</label><input class="inp" id="fModele" value="${esc(a.modele||"")}" placeholder="ex : Big Pony, 501, Nuptse, Reverse Weave…"><span class="hint">Les modèles iconiques se vendent plus cher — l'app en reconnaît une trentaine.</span></div>
+      <div class="row2"><div class="fg"><label for="fNeuf">Prix neuf (€)</label><input class="inp" id="fNeuf" inputmode="decimal" value="${esc(a.prixNeuf??"")}" placeholder="${p.e.retail?"≈ "+Math.round(p.e.retail):""}"><span class="hint">Étiquette ou 10 s sur Google. Le plus gros levier de précision.</span></div>
+        <div class="fg"><span class="lbl">Pour</span>${optGroup("genre",Object.keys(GENRE_M),a.genre||"Homme")}</div></div>
+      <div class="fg"><label for="fComps">Annonces similaires vues sur Vinted (€)</label><input class="inp" id="fComps" value="${esc(a.comps||"")}" placeholder="ex : 35 42 38" inputmode="decimal"><span class="hint">Tape les prix de 3 annonces de la même pièce : l'estimation s'aligne dessus.</span></div>
+      <div class="fg"><span class="lbl">Défauts</span>${optGroup("defs",Object.keys(DEFAUTS),a.defs,true)}</div>
     </details>
     <div id="sugBox" style="margin-top:12px">${sugHTML(p)}</div>
-    <div class="fg" style="margin-top:12px"><label for="fPrix">Prix affiché (€)</label><div class="urlrow"><input class="inp" id="fPrix" inputmode="decimal" value="${esc(a.prixAffiche??"")}" placeholder="${p.hi}">${a.id&&num(a.prixAffiche)>0&&!sold?`<button type="button" class="btn sm" data-act="drop-price" data-id="${a.id}" title="Baisser de 10 %">−10 %</button>`:""}</div></div>
+    <div class="fg" style="margin-top:12px"><label for="fPrix">Prix affiché (€)</label><div class="hint warnp" id="prixWarn" hidden></div><div class="urlrow"><input class="inp" id="fPrix" inputmode="decimal" value="${esc(a.prixAffiche??"")}" placeholder="${p.hi}">${a.id&&num(a.prixAffiche)>0&&!sold?`<button type="button" class="btn sm" data-act="drop-price" data-id="${a.id}" title="Baisser de 10 %">−10 %</button>`:""}</div></div>
    </div>
    <div class="fpane" data-pane="vente" ${pane==="vente"?"":"hidden"}>
     <div class="fg"><span class="lbl">Statut</span>${optGroup("statut",STATUTS,a.statut||"En stock")}</div>
@@ -1724,6 +1800,7 @@ function sugHTML(p){
     ${e.cost>0?`<div class="hint" style="margin-top:8px">Coût ${fmtE(e.cost)} → au juste prix : <b class="${sgn(e.margin)}">${fmtSigned(e.margin)}</b> de bénéfice (x${fmtN(e.mult)}).${e.floor<=e.cost*1.3+1?" Ne descends pas sous le plancher.":""}</div>`:""}
     <div class="hint" style="margin-top:6px">Patient ? Jusqu'à <b>${fmtE0(e.high)}</b> si tu peux attendre. Plancher absolu : <b>${fmtE0(e.floor)}</b>.</div>
     ${!e.known&&!e.custom?`<div class="hint" style="margin-top:6px">Choisis la marque pour une estimation fiable.</div>`:""}
+    ${e.vintedQ&&!e.comps?`<div class="hint" style="margin-top:6px"><a class="tlink2" href="https://www.vinted.fr/catalog?search_text=${encodeURIComponent(e.vintedQ)}&order=relevance" target="_blank" rel="noopener">↗ Vérifier sur Vinted</a> puis note 3 prix d'annonces similaires dans « Affiner le prix » : fiabilité maximale.</div>`:""}
     <details class="pc-why"><summary>Pourquoi ce prix ?</summary>
       <div class="pc-f">${e.F.map(f=>f.note?`<div class="row note"><span>${esc(f.k)}</span></div>`:`<div class="row"><span>${esc(f.k)}</span>${f.base!=null?`<b>${fmtE0(f.base)}</b>`:pm(f.m)}</div>`).join("")}
       <div class="row total"><span>Estimation</span><b>${fmtE0(e.fair)}</b></div></div>
@@ -1782,9 +1859,12 @@ function setFormBrand(name){
   const i=$("#fMarque"), btn=$("#fMarqueBtn"); if(!i) return; i.value=name; btn.innerHTML=brandBtnHTML(name); btn.classList.toggle("empty",!name);
   refreshSug();
 }
-function refreshSug(){ const f=$("#artForm"); if(!f||!$("#sugBox")) return; const base=f.dataset.id?db.articles.find(x=>x.id===f.dataset.id):{lotId:val("fLot")}; $("#sugBox").innerHTML=sugHTML(suggestPrice(draftFromForm(base))) }
+function refreshSug(){ const f=$("#artForm"); if(!f||!$("#sugBox")) return; const base=f.dataset.id?db.articles.find(x=>x.id===f.dataset.id):{lotId:val("fLot")}; const p=suggestPrice(draftFromForm(base)); $("#sugBox").innerHTML=sugHTML(p); const n=$("#fNeuf"); if(n&&p.e.retail&&!p.e.neufOK) n.placeholder="≈ "+Math.round(p.e.retail); priceWarn(p) }
+function priceWarn(p){ const f=$("#artForm"), w=$("#prixWarn"); if(!f||!w) return; const v=num(val("fPrix")); if(!(v>0)){w.hidden=true;return} p=p||suggestPrice(draftFromForm(f.dataset.id?db.articles.find(x=>x.id===f.dataset.id):{lotId:val("fLot")})); const e=p.e;
+  let msg=""; if(v>e.list*1.4) msg=`⚠️ ${fmtE0(v)} c'est ${Math.round((v/e.list-1)*100)} % au-dessus du prix conseillé (${fmtE0(e.list)}). Ça se tente seulement si tu as vu des annonces similaires à ce prix.`; else if(v<e.quick*.8) msg=`⚠️ ${fmtE0(v)} c'est sous la vente rapide (${fmtE0(e.quick)}) : tu laisses de l'argent sur la table.`; else if(e.cost>0&&v<e.cost*1.3) msg=`⚠️ À ${fmtE0(v)} tu ne couvres presque pas ton coût (${fmtE(e.cost)}).`;
+  w.hidden=!msg; w.textContent=msg }
 function draftFromForm(base){
-  return Object.assign({},base,{marque:val("fMarque"),type:readOpt("type"),taille:readOpt("taille"),etat:readOpt("etat"),couleur:readOpt("couleur"),matiere:val("fMatiere"),details:readOpt("details"),lotId:val("fLot"),defauts:val("fDef")});
+  return Object.assign({},base,{marque:val("fMarque"),type:readOpt("type"),taille:readOpt("taille"),etat:readOpt("etat"),couleur:readOpt("couleur"),matiere:val("fMatiere"),details:readOpt("details"),lotId:val("fLot"),defauts:val("fDef"),modele:val("fModele"),prixNeuf:val("fNeuf"),comps:val("fComps"),defs:readOpt("defs"),genre:readOpt("genre")});
 }
 
 function openArt(id,opts={}){
@@ -1806,11 +1886,12 @@ async function saveArtForm(form,next){
   const statut=readOpt("statut")||"En stock";
   const d={marque:val("fMarque"),type:readOpt("type"),taille:readOpt("taille"),etat:readOpt("etat"),couleur:readOpt("couleur"),matiere:val("fMatiere"),
     lotId:val("fLot"),details:readOpt("details"),mesure1:val("fM1"),mesure2:val("fM2"),defauts:val("fDef"),statut,
+    modele:val("fModele"),prixNeuf:val("fNeuf"),comps:val("fComps"),defs:readOpt("defs"),genre:readOpt("genre"),
     prixAffiche:val("fPrix"),dateEnLigne:val("fEnLigne"),prixVente:val("fPV"),dateVente:val("fDV"),frais:val("fFrais"),
     minAnnonce:val("fMinA"),minEnvoi:val("fMinE"),coutManuel:val("fCout"),notes:val("fNotes"),vintedUrl:cleanUrl(val("fVurl"))};
   if(statut==="Vendu"){ if(!d.dateVente) d.dateVente=today(); if(!has(d.prixVente)) d.prixVente=d.prixAffiche; if(!(num(d.prixVente)>0)){toast("Indique le prix de vente");return} if(!d.dateEnLigne) d.dateEnLigne=d.dateVente }
   if((statut==="En ligne"||statut==="Réservé")&&!d.dateEnLigne) d.dateEnLigne=today();
-  const untouched=!d.marque&&!pendingPhoto&&!has(d.prixAffiche)&&!d.taille&&!d.couleur&&!d.notes;
+  const untouched=!d.marque&&!pendingPhoto&&!has(d.prixAffiche)&&!d.taille&&!d.couleur&&!d.notes&&!d.modele;
   if(!id&&!next&&form.dataset.rafale==="1"&&untouched){closeSheet();render();return}
   if(!d.marque&&!d.type){toast("Indique au moins une marque ou un type");return}
   if(!id) a.ref=nextRef("a");
@@ -2045,8 +2126,8 @@ document.addEventListener("click",async e=>{
   const ph=e.target.closest("img[data-photo],.photo img"); if(ph&&!e.target.closest("#lightbox")){ e.preventDefault(); e.stopPropagation(); const a=ph.dataset.photo?db.articles.find(x=>x.id===ph.dataset.photo):null; openLightbox(ph.src,a?[a.marque&&brandName(a.marque),a.type,a.taille].filter(Boolean).join(" · "):""); return }
   const nav=e.target.closest("[data-nav]"); if(nav){go(nav.dataset.nav);return}
   const opt=e.target.closest(".opt button:not([data-act])");
-  if(opt){const g=opt.parentElement;if(g.dataset.multi)opt.classList.toggle("on");else{const was=opt.classList.contains("on");g.querySelectorAll("button").forEach(b=>b.classList.remove("on"));if(!was||["statut","lstatut","type","etat","cl","dcat"].includes(g.dataset.opt))opt.classList.add("on")}
-    if($("#artForm")&&["type","etat","details","taille"].includes(g.dataset.opt)) refreshSug();
+  if(opt){const g=opt.closest(".opt");if(g.dataset.multi)opt.classList.toggle("on");else{const was=opt.classList.contains("on");g.querySelectorAll("button").forEach(b=>b.classList.remove("on"));if(!was||["statut","lstatut","type","etat","cl","dcat","genre"].includes(g.dataset.opt))opt.classList.add("on")}
+    if($("#artForm")&&["type","etat","details","taille","couleur","defs","genre"].includes(g.dataset.opt)) refreshSug();
     return}
   if(e.target===$("#scrim")){closeSheet();return}
   const pk=e.target.closest("[data-pick]"); if(pk){pickBrand(pk.dataset.pick);return}
@@ -2058,7 +2139,7 @@ document.addEventListener("click",async e=>{
     case "close": closeSheet(); break;
     case "pick-brand": openPicker(setFormBrand,val("fMarque")); break;
     case "hint-ok": markSwipeLearned(); break;
-    case "more-types": { t.hidden=true; const r=t.parentElement.querySelector(".rest"); if(r) r.hidden=false; break }
+    case "more-types": { t.hidden=true; t.parentElement.querySelectorAll(".rest").forEach(r=>r.hidden=false); break }
     case "drop-price": { const a=A(); if(!a) break; const old=num(a.prixAffiche); if(!(old>0)){toast("Pas de prix affiché sur cette pièce");openArt(id);break} const cost=artCost(a); let nv=Math.max(Math.ceil(cost*1.2)||1,Math.round(old*0.9)); if(nv>=old) nv=old-1; if(nv<1){toast("Prix déjà au plancher");break} a.prixAffiche=String(nv); save(); render(); const fp=$("#fPrix"); if(fp) fp.value=nv; toastUndo(`${fmtE0(old)} → ${fmtE0(nv)}${a.vintedUrl?"":" · modifie-le sur Vinted"}`,()=>{a.prixAffiche=String(old);save();render()},a.vintedUrl||null); break }
     case "mark-reserve": { const a=A(); if(!a) break; const prev=a.statut; a.statut="Réservé"; save(); render(); toastUndo(`${a.ref} réservée`,()=>{a.statut=prev;save();render()}); break }
     case "mark-online": { const a=A(); if(!a) break; const prev=a.statut; a.statut="En ligne"; save(); render(); toastUndo(`${a.ref} remise en ligne`,()=>{a.statut=prev;save();render()}); break }
@@ -2140,7 +2221,8 @@ document.addEventListener("submit",async e=>{
 });
 document.addEventListener("input",e=>{
   if(e.target.id==="pickQ"){pickState.q=e.target.value;drawPicker();return}
-  if(e.target.id==="fDef"){clearTimeout(window._defT);window._defT=setTimeout(refreshSug,400);return}
+  if(["fDef","fModele","fNeuf","fComps"].includes(e.target.id)){clearTimeout(window._defT);window._defT=setTimeout(refreshSug,350);return}
+  if(e.target.id==="fPrix"){priceWarn();return}
   if(e.target.id==="q"){ui.q=e.target.value;const pos=e.target.selectionStart;render();const q=$("#q");if(q){q.focus();try{q.setSelectionRange(pos,pos)}catch(_){}}}
 });
 document.addEventListener("change",async e=>{
