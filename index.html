@@ -192,7 +192,29 @@ textarea.inp{height:auto;min-height:90px;padding:10px 12px;line-height:1.45}
 .suggest{display:flex;align-items:center;gap:10px;background:var(--accent-soft);border-radius:12px;padding:10px 12px;font-size:14px}
 .suggest b{font-family:var(--f-display);font-size:18px}
 .photo{width:100%;aspect-ratio:4/3;max-width:100%;border-radius:14px;border:1px dashed var(--line);background:var(--surface);display:grid;place-items:center;overflow:hidden;cursor:pointer;position:relative;color:var(--muted);font-weight:600}
-.photo img{width:100%;height:100%;object-fit:cover}
+.photo img{width:100%;height:100%;object-fit:cover;cursor:zoom-in}
+.photo-add{position:absolute;inset:0;display:grid;place-items:center;cursor:pointer}
+.photo-chg{position:absolute;right:8px;bottom:8px;background:rgba(5,12,10,.72);color:#fff;font-size:12px;font-weight:700;padding:6px 10px;border-radius:999px;cursor:pointer;backdrop-filter:blur(6px)}
+.photo-zoom{position:absolute;left:8px;bottom:8px;background:rgba(5,12,10,.72);color:#fff;font-size:12px;font-weight:700;padding:6px 10px;border-radius:999px;pointer-events:none}
+.thumb img{cursor:zoom-in}
+/* visionneuse plein écran */
+.lb{position:fixed;inset:0;z-index:95;background:rgba(2,6,5,.96);display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .18s;touch-action:none;overscroll-behavior:contain}
+.lb.on{opacity:1}
+.lb img{max-width:100vw;max-height:100vh;max-height:100dvh;object-fit:contain;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;will-change:transform;transition:transform .18s cubic-bezier(.22,1,.36,1)}
+.lb.drag img{transition:none}
+.lb-top{position:absolute;top:0;left:0;right:0;display:flex;justify-content:space-between;align-items:center;padding:calc(10px + env(safe-area-inset-top,0px)) 14px 10px;color:#fff;font-size:14px;font-weight:600;background:linear-gradient(rgba(0,0,0,.5),transparent)}
+.lb-top button{background:rgba(255,255,255,.14);color:#fff;border:0;border-radius:999px;width:38px;height:38px;font-size:18px;display:grid;place-items:center;cursor:pointer}
+.lb-hint{position:absolute;bottom:calc(14px + env(safe-area-inset-bottom,0px));left:0;right:0;text-align:center;color:rgba(255,255,255,.6);font-size:12px;pointer-events:none}
+/* projection */
+.proj{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin:12px 0}
+.proj .pc{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px;text-align:center}
+.proj .pc.on{border-color:var(--accent);background:var(--accent-soft)}
+.proj .pl{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.proj .pv{font-family:var(--f-display);font-weight:800;font-size:19px;margin-top:4px}
+.proj .ps{font-size:11px;color:var(--muted);margin-top:2px}
+.proj-rows{display:grid;gap:6px;font-size:14px}
+.proj-rows div{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid var(--line)}
+.proj-rows b{font-family:var(--f-mono)}
 .stats3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px 0}
 .mini{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px}
 .mini .l{font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.05em}
@@ -363,6 +385,7 @@ details.more{border:1px dashed var(--line);border-radius:12px;padding:6px 12px;m
 <div class="picker" id="picker" hidden role="dialog" aria-modal="true" aria-label="Choisir une marque"><div class="pk">
   <div class="pk-top"><label class="search"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg><input id="pickQ" type="search" placeholder="Rechercher une marque…" autocomplete="off" aria-label="Rechercher une marque"></label><button type="button" class="x" id="pickClose" aria-label="Fermer">✕</button></div>
   <div class="pk-list" id="pickList"></div></div></div>
+<div class="lb" id="lightbox" hidden role="dialog" aria-modal="true" aria-label="Photo en plein écran"><img id="lbImg" alt="Photo de l'article" draggable="false"><div class="lb-top"><span id="lbTitle"></span><button type="button" id="lbClose" aria-label="Fermer">✕</button></div><div class="lb-hint">Pince ou double‑tape pour zoomer · tape pour fermer</div></div>
 <div class="toast" id="toast"></div>
 <input type="file" id="fileImport" accept="application/json,.json" hidden>
 
@@ -1073,6 +1096,55 @@ function artMinutes(a){ const S=db.settings; let m=0;
   if(isSold(a)) m+= has(a.minEnvoi)?num(a.minEnvoi):S.minEnvoi; return m }
 function daysOnline(a){ if(!a.dateEnLigne) return null; return Math.max(0,days(a.dateEnLigne, isSold(a)&&a.dateVente?a.dateVente:today())) }
 
+/* ---------- Projection réaliste ----------
+   On ne vend jamais tout, et rarement au prix affiché. On calibre deux choses sur TES ventes :
+   - ratio : prix encaissé / prix affiché (négociation, baisses) — défaut 0.88
+   - taux : part des pièces qui finissent vendues — défaut 70 %
+   et on fait trois scénarios. */
+const PROJ_DEF={ratio:.88,rate:.70};
+function calibration(A){
+  const S=db.settings, sold=A.filter(isSold);
+  const rs=sold.filter(a=>num(a.prixAffiche)>0&&num(a.prixVente)>0).map(a=>num(a.prixVente)/num(a.prixAffiche)).filter(v=>v>.3&&v<1.5);
+  let ratio=PROJ_DEF.ratio, ratioN=rs.length;
+  if(rs.length){ const w=rs.length/(rs.length+4); ratio=PROJ_DEF.ratio*(1-w)+(sum(rs)/rs.length)*w }
+  // pièces "jugées" : vendues, invendables, ou en ligne depuis longtemps sans partir
+  const stale=A.filter(a=>!isSold(a)&&a.statut!=="Invendable"&&(daysOnline(a)||0)>=S.alerteJours*2).length;
+  const inv=A.filter(a=>a.statut==="Invendable").length, decided=sold.length+inv+stale;
+  let rate=PROJ_DEF.rate, rateN=decided;
+  if(decided>=5){ const w=decided/(decided+8); rate=PROJ_DEF.rate*(1-w)+(sold.length/decided)*w }
+  rate=Math.min(.95,Math.max(.3,rate)); ratio=Math.min(1.05,Math.max(.6,ratio));
+  return {ratio,ratioN,rate,rateN};
+}
+function project(live,cal){
+  cal=cal||calibration(db.articles);
+  let pess=0,real=0,opt=0,max=0,n=0;
+  for(const a of live){
+    let p=num(a.prixAffiche); if(!(p>0)){ const e=estimate(a); p=e.mid; if(!(p>0)) continue }
+    n++; max+=p;
+    real+=p*cal.ratio*cal.rate;
+    pess+=p*Math.max(.6,cal.ratio-.1)*Math.max(.3,cal.rate-.2);
+    opt +=p*Math.min(1,cal.ratio+.06)*Math.min(1,cal.rate+.15);
+  }
+  return {pess,real,opt,max,n,cal};
+}
+function projSheet(){
+  const s=stats(), c=s.cal, pj=s.proj;
+  const row=(l,v,sub)=>`<div><span>${l}${sub?`<br><small class="muted">${sub}</small>`:""}</span><b>${v}</b></div>`;
+  openSheet("Projection du bénéfice",`
+    <p class="muted" style="margin:0 0 4px;font-size:14px">Ton bénéfice net actuel est de <b>${fmtSigned(s.net)}</b>. Voilà où tu peux arriver avec les ${pj.n} pièces encore dispo (${fmtE0(pj.max)} de prix affichés) :</p>
+    <div class="proj">
+      <div class="pc"><div class="pl">Pessimiste</div><div class="pv ${sgn(s.projPess)}">${fmtSigned(s.projPess)}</div><div class="ps">${Math.round(Math.max(.3,c.rate-.2)*100)} % vendues · −${Math.round((1-Math.max(.6,c.ratio-.1))*100)} %</div></div>
+      <div class="pc on"><div class="pl">Réaliste</div><div class="pv ${sgn(s.projReal)}">${fmtSigned(s.projReal)}</div><div class="ps">${Math.round(c.rate*100)} % vendues · −${Math.round((1-c.ratio)*100)} %</div></div>
+      <div class="pc"><div class="pl">Optimiste</div><div class="pv ${sgn(s.projOpt)}">${fmtSigned(s.projOpt)}</div><div class="ps">${Math.round(Math.min(1,c.rate+.15)*100)} % vendues · −${Math.round((1-Math.min(1,c.ratio+.06))*100)} %</div></div>
+    </div>
+    <div class="proj-rows">
+      ${row("Si <i>tout</i> part au prix affiché",fmtSigned(s.potentiel),"le max théorique, ça n'arrive jamais")}
+      ${row("Prix encaissé / prix affiché",fmtP(c.ratio),c.ratioN?`calé sur tes ${c.ratioN} vente${c.ratioN>1?"s":""} (négo, baisses de prix)`:"valeur par défaut, tes ventes affineront")}
+      ${row("Part des pièces qui se vendent",fmtP(c.rate),c.rateN>=5?`calé sur ${c.rateN} pièces jugées (vendues, invendables, en ligne depuis +${db.settings.alerteJours*2} j)`:"valeur par défaut Vinted, affinée dès 5 pièces jugées")}
+      ${row("Stock au coût d'achat",fmtE(s.stockCout),"déjà compté dans le bénéfice net")}
+    </div>
+    <p class="hint" style="margin-top:12px">Les pièces invendables sont exclues. Plus tu enregistres de ventes, plus la projection colle à ta réalité.</p>`);
+}
 function stats(){
   const S=db.settings, A=db.articles, sold=A.filter(isSold);
   const s={};
@@ -1082,6 +1154,7 @@ function stats(){
   s.roi=s.out>0?s.net/s.out:NaN; s.recup=s.out>0?Math.min(1,s.ca/s.out):0; s.reste=Math.max(0,s.out-s.ca);
   const live=A.filter(a=>!isSold(a)&&a.statut!=="Invendable");
   s.stockCout=sum(live,artCost); s.stockPrix=sum(live,a=>num(a.prixAffiche)); s.potentiel=s.net+s.stockPrix;
+  s.cal=calibration(A); const pj=project(live,s.cal); s.proj=pj; s.projPess=s.net+pj.pess; s.projReal=s.net+pj.real; s.projOpt=s.net+pj.opt;
   s.nTot=A.length; s.nSold=sold.length; s.nLigne=A.filter(a=>a.statut==="En ligne"||a.statut==="Réservé").length;
   s.nStock=A.filter(a=>a.statut==="En stock"||a.statut==="Retourné").length; s.nInv=A.filter(a=>a.statut==="Invendable").length;
   s.ecoul=s.nTot?s.nSold/s.nTot:NaN; s.panier=s.nSold?s.ca/s.nSold:NaN; s.benefMoy=s.nSold?s.benefVentes/s.nSold:NaN;
@@ -1245,7 +1318,7 @@ function viewHome(){
       ${kpi("Chiffre d'affaires",fmtE(s.ca),`${s.nSold} vente${s.nSold>1?"s":""}`,"",{act:"filter",id:"Vendu"})}
       ${kpi("Bénéfice sur pièces vendues",fmtE(s.benefVentes),isFinite(s.marge)?`marge ${fmtP(s.marge)}`:"aucune vente",sgn(s.benefVentes))}
       ${kpi("ROI",isFinite(s.roi)?fmtP(s.roi):"–","bénéfice net / dépensé",sgn(s.roi))}
-      ${kpi("Si tout le stock part",fmtSigned(s.potentiel),`stock affiché ${fmtE0(s.stockPrix)}`,sgn(s.potentiel))}
+      ${kpi("Bénéfice projeté (réaliste)",fmtSigned(s.projReal),`de ${fmtSigned(s.projPess)} à ${fmtSigned(s.projOpt)} · max ${fmtSigned(s.potentiel)}`,sgn(s.projReal),{act:"proj",id:""})}
       ${kpi("Dépensé",fmtE(s.out),`lots ${fmtE0(s.investLots)} · autres ${fmtE0(s.depenses+s.frais)}`)}
       ${kpi("Stock (coût d'achat)",fmtE(s.stockCout),`${s.nStock+s.nLigne} pièce${s.nStock+s.nLigne>1?"s":""} dispo`,"",{act:"filter",id:"dispo"})}
       ${kpi("Prix de vente moyen",isFinite(s.panier)?fmtE(s.panier):"–",isFinite(s.benefMoy)?`${fmtSigned(s.benefMoy)} / pièce`:"")}
@@ -1314,6 +1387,7 @@ function viewHome(){
   `;
 }
 
+function photoBoxHTML(img){ return img?`${img}<span class="photo-zoom">⤢ Voir en grand</span><label class="photo-chg" for="fPhoto">📷 Changer</label>`:`<label class="photo-add" for="fPhoto">📷 Ajouter une photo</label>` }
 function artThumb(a){
   const init=esc((a.marque||a.type||"?").trim().charAt(0).toUpperCase());
   return `<div class="thumb">${a.photo?`<img data-photo="${a.id}" alt="">`:init}</div>`;
@@ -1364,6 +1438,7 @@ function viewStock(){
 function lotCard(l){
   const arts=lotArts(l), sold=arts.filter(isSold), ca=sum(sold,a=>num(a.prixVente)), fr=sum(arts,a=>num(a.frais)), cost=lotCost(l);
   const ben=ca-fr-cost, rec=cost>0?Math.min(1,(ca-fr)/cost):0, pcs=num(l.pieces);
+  const liveL=arts.filter(a=>!isSold(a)&&a.statut!=="Invendable"), pj=liveL.length?project(liveL):null;
   const st=l.statut==="En route"?`<span class="pill st-ligne">En route</span>`:ben>=0&&sold.length?`<span class="pill st-vendu">Rentabilisé</span>`:`<span class="pill st-reserve">En cours</span>`;
   return `<div class="card" style="margin-bottom:10px">
     <div style="display:flex;gap:10px;align-items:flex-start">
@@ -1373,7 +1448,7 @@ function lotCard(l){
     <div class="stats3">
       <div class="mini"><div class="l">Coût</div><div class="v">${fmtE(cost)}</div></div>
       <div class="mini"><div class="l">/ pièce</div><div class="v">${pcs>0||arts.length?fmtE(cost/lotPieces(l)):"–"}</div></div>
-      <div class="mini"><div class="l">Bénéfice</div><div class="v ${sgn(ben)}">${fmtSigned(ben)}</div></div>
+      <div class="mini"><div class="l">Bénéfice</div><div class="v ${sgn(ben)}">${fmtSigned(ben)}</div>${pj?`<div class="l" style="margin-top:2px">projeté <b class="${sgn(ben+pj.real)}">${fmtSigned(ben+pj.real)}</b></div>`:""}</div>
     </div>
     <div class="lbl" style="display:flex;justify-content:space-between"><span>Mise récupérée</span><span class="num">${fmtP(rec)}</span></div>
     <div class="pbar ${rec>=1?"good":""}" style="margin:6px 0 10px"><span style="width:${rec*100}%"></span></div>
@@ -1529,7 +1604,7 @@ document.addEventListener("pointerup",()=>{ if(!SD.on) return; SD.on=false; cons
 const layers=[]; let popping=false, expectPop=0;
 function pushLayer(n){ layers.push(n); try{history.pushState({layer:n,depth:layers.length},"")}catch(e){} }
 function popLayer(n){ const i=layers.lastIndexOf(n); if(i<0) return; layers.splice(i,1); if(!popping){ expectPop++; try{history.back()}catch(e){expectPop--} } }
-window.addEventListener("popstate",()=>{ if(expectPop>0){expectPop--;return} if(!layers.length) return; popping=true; const n=layers[layers.length-1]; if(n==="picker") closePicker(); else closeSheet(); popping=false; });
+window.addEventListener("popstate",()=>{ if(expectPop>0){expectPop--;return} if(!layers.length) return; popping=true; const n=layers[layers.length-1]; if(n==="lightbox") closeLightbox(); else if(n==="picker") closePicker(); else closeSheet(); popping=false; });
 function openSheet(title,html,onClose,footer){
   $("#sheetTitle").textContent=title; $("#sheetBody").innerHTML=html; $("#sheetBody").scrollTop=0;
   const f=$("#sheetFoot"); f.innerHTML=footer||""; f.hidden=!footer;
@@ -1577,7 +1652,7 @@ function artForm(a,opts={}){
   <form id="artForm" data-id="${a.id||""}" data-rafale="${opts.rafale?1:0}">
    <div class="seg2" role="tablist"><button type="button" role="tab" class="${pane==="fiche"?"on":""}" data-act="pane" data-id="fiche">Fiche</button><button type="button" role="tab" class="${pane==="vente"?"on":""}" data-act="pane" data-id="vente">Prix & vente</button></div>
    <div class="fpane" data-pane="fiche" ${pane==="fiche"?"":"hidden"}>
-    <label class="photo" for="fPhoto" id="photoBox">${a.photo?`<img data-photo="${a.id}" alt="Photo de l'article">`:`<span>📷 Ajouter une photo</span>`}</label>
+    <div class="photo" id="photoBox">${photoBoxHTML(a.photo?`<img data-photo="${a.id}" alt="Photo de l'article">`:"")}</div>
     <input type="file" id="fPhoto" accept="image/*" hidden>
     <div class="fg" style="margin-top:14px"><span class="lbl">Marque</span>
       <input type="hidden" id="fMarque" value="${esc(a.marque||"")}">
@@ -1647,6 +1722,23 @@ function openPicker(onPick,current){
   pushLayer("picker"); $("#picker").hidden=false; requestAnimationFrame(()=>$("#picker").classList.add("on"));
   drawPicker(); const i=$("#pickQ"); i.value=""; setTimeout(()=>i.focus(),200);
 }
+/* ---------- Visionneuse photo ---------- */
+const LB={scale:1,x:0,y:0,pts:new Map(),d0:0,s0:1,x0:0,y0:0,cx:0,cy:0,moved:false,lastTap:0,startT:0};
+function openLightbox(src,title){ const lb=$("#lightbox"); if(!src) return; $("#lbImg").src=src; $("#lbTitle").textContent=title||""; lbReset(); lb.hidden=false; requestAnimationFrame(()=>lb.classList.add("on")); pushLayer("lightbox"); buzz(4) }
+function closeLightbox(){ const lb=$("#lightbox"); if(lb.hidden) return; popLayer("lightbox"); lb.classList.remove("on"); setTimeout(()=>{lb.hidden=true;$("#lbImg").src=""},180) }
+function lbReset(){ LB.scale=1;LB.x=0;LB.y=0;lbApply() }
+function lbApply(){ $("#lbImg").style.transform=`translate(${LB.x}px,${LB.y}px) scale(${LB.scale})` }
+function lbClamp(){ const img=$("#lbImg"), r=img.getBoundingClientRect(); const w=r.width, h=r.height; const mx=Math.max(0,(w-innerWidth)/2), my=Math.max(0,(h-innerHeight)/2); LB.x=Math.min(mx,Math.max(-mx,LB.x)); LB.y=Math.min(my,Math.max(-my,LB.y)) }
+function lbZoomTo(sc,cx,cy){ const img=$("#lbImg"), r=img.getBoundingClientRect(); const ox=(cx-(r.left+r.width/2)), oy=(cy-(r.top+r.height/2)); const k=sc/LB.scale; LB.x=LB.x-ox*(k-1); LB.y=LB.y-oy*(k-1); LB.scale=sc; if(sc<=1){LB.x=0;LB.y=0;LB.scale=1} lbClamp(); lbApply() }
+$("#lightbox").addEventListener("pointerdown",e=>{ const lb=$("#lightbox"); if(e.target.closest("#lbClose")) return; lb.setPointerCapture&&lb.setPointerCapture(e.pointerId); LB.pts.set(e.pointerId,{x:e.clientX,y:e.clientY}); LB.moved=false; LB.startT=Date.now();
+  if(LB.pts.size===2){ const [a,b]=[...LB.pts.values()]; LB.d0=Math.hypot(a.x-b.x,a.y-b.y); LB.s0=LB.scale; LB.cx=(a.x+b.x)/2; LB.cy=(a.y+b.y)/2 } else { LB.x0=e.clientX-LB.x; LB.y0=e.clientY-LB.y } lb.classList.add("drag") });
+$("#lightbox").addEventListener("pointermove",e=>{ if(!LB.pts.has(e.pointerId)) return; const p=LB.pts.get(e.pointerId); if(Math.hypot(e.clientX-p.x,e.clientY-p.y)>6) LB.moved=true; LB.pts.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  if(LB.pts.size===2){ const [a,b]=[...LB.pts.values()]; const d=Math.hypot(a.x-b.x,a.y-b.y); const sc=Math.min(5,Math.max(1,LB.s0*d/(LB.d0||1))); lbZoomTo(sc,LB.cx,LB.cy) }
+  else if(LB.scale>1){ LB.x=e.clientX-LB.x0; LB.y=e.clientY-LB.y0; lbClamp(); lbApply() } });
+function lbUp(e){ const lb=$("#lightbox"); if(!LB.pts.has(e.pointerId)) return; LB.pts.delete(e.pointerId); if(LB.pts.size){ const [a]=[...LB.pts.values()]; LB.x0=a.x-LB.x; LB.y0=a.y-LB.y; return } lb.classList.remove("drag");
+  if(!LB.moved&&Date.now()-LB.startT<400){ const now=Date.now(); if(now-LB.lastTap<300){ LB.lastTap=0; lbZoomTo(LB.scale>1?1:2.5,e.clientX,e.clientY) } else { LB.lastTap=now; setTimeout(()=>{ if(LB.lastTap===now){ LB.lastTap=0; if(LB.scale<=1) closeLightbox() } },300) } } }
+$("#lightbox").addEventListener("pointerup",lbUp); $("#lightbox").addEventListener("pointercancel",lbUp);
+$("#lightbox").addEventListener("click",e=>{ if(e.target.closest("#lbClose")) closeLightbox() });
 function closePicker(){ popLayer("picker"); $("#picker").classList.remove("on"); setTimeout(()=>{$("#picker").hidden=true},200) }
 function drawPicker(){
   const q=norm(pickState.q); const S=db.settings; const recent=(S.recentBrands||[]).map(brandOf).filter(Boolean);
@@ -1935,6 +2027,7 @@ function demoPhoto(a){
 
 /* ================= events ================= */
 document.addEventListener("click",async e=>{
+  const ph=e.target.closest("img[data-photo],.photo img"); if(ph&&!e.target.closest("#lightbox")){ e.preventDefault(); e.stopPropagation(); const a=ph.dataset.photo?db.articles.find(x=>x.id===ph.dataset.photo):null; openLightbox(ph.src,a?[a.marque&&brandName(a.marque),a.type,a.taille].filter(Boolean).join(" · "):""); return }
   const nav=e.target.closest("[data-nav]"); if(nav){go(nav.dataset.nav);return}
   const opt=e.target.closest(".opt button:not([data-act])");
   if(opt){const g=opt.parentElement;if(g.dataset.multi)opt.classList.toggle("on");else{const was=opt.classList.contains("on");g.querySelectorAll("button").forEach(b=>b.classList.remove("on"));if(!was||["statut","lstatut","type","etat","cl","dcat"].includes(g.dataset.opt))opt.classList.add("on")}
@@ -1983,6 +2076,7 @@ document.addEventListener("click",async e=>{
     case "annonce": { const a=A(); if(a) annonceSheet(a); break }
     case "ann-ton": annState.ton=t.dataset.v; annState.draw(); break;
     case "ann-shuffle": annState.seed++; annState.draw(); break;
+    case "proj": projSheet(); break;
     case "vinted-go": { const g=annState.art&&annState.art._ann; if(g) copyText(g.titre+"\n\n"+g.desc+"\n\n"+g.hashtags); buzz(10); break }
     case "copy": { const g=annState.art&&annState.art._ann; if(!g)break; const txt=t.dataset.t==="titre"?g.titre:t.dataset.t==="desc"?g.desc+"\n\n"+g.hashtags:g.titre+"\n\n"+g.desc+"\n\n"+g.hashtags; copyText(txt); break }
     case "dup-art": { const a=A(); if(!a)break; const c=JSON.parse(JSON.stringify(a)); Object.assign(c,{id:uid(),ref:nextRef("a"),created:Date.now(),statut:"En stock",photo:false,dateEnLigne:"",dateVente:"",prixVente:"",frais:""}); db.articles.push(c); save(); toast(`${c.ref} créée`); openArt(c.id); render(); break }
@@ -2037,10 +2131,10 @@ document.addEventListener("input",e=>{
 document.addEventListener("change",async e=>{
   if(e.target.id==="sort"){ui.sort=e.target.value;render()}
   if(e.target.id==="fMatiere"||e.target.id==="fLot") refreshSug();
-  if(e.target.id==="fPhoto"&&e.target.files[0]){try{pendingPhoto=await compress(e.target.files[0]);$("#photoBox").innerHTML=`<img src="${pendingPhoto}" alt="Photo de l'article">`}catch(_){toast("Impossible de lire cette photo")}}
+  if(e.target.id==="fPhoto"&&e.target.files[0]){try{pendingPhoto=await compress(e.target.files[0]);$("#photoBox").innerHTML=photoBoxHTML(`<img src="${pendingPhoto}" alt="Photo de l'article">`)}catch(_){toast("Impossible de lire cette photo")}}
   if(e.target.id==="fileImport"&&e.target.files[0]){const r=new FileReader();r.onload=()=>doImport(r.result);r.readAsText(e.target.files[0]);e.target.value=""}
 });
-document.addEventListener("keydown",e=>{if(e.key==="Escape"){if(!$("#picker").hidden)closePicker();else if(!$("#sheet").hidden)closeSheet()}});
+document.addEventListener("keydown",e=>{if(e.key==="Escape"){if(!$("#lightbox").hidden)closeLightbox();else if(!$("#picker").hidden)closePicker();else if(!$("#sheet").hidden)closeSheet()}});
 
 /* boot */
 const h=(location.hash||"").slice(1); if(["home","stock","lots","more"].includes(h)) ui.view=h;
