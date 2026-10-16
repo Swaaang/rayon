@@ -421,65 +421,78 @@ const DEP_CATS = ["Emballage","Boost / Vitrine","Matériel","Transport","Autre"]
    pop  : marque courante en seconde main homme (remontée dans le sélecteur) */
 function norm(s){return (s||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g," ").trim()}
 const TIER_MULT={1:.45,2:.68,3:1,4:1.6,5:3.1};
+/* ---- Modèle de prix v2 : on part du PRIX NEUF, puis on applique la cote seconde main ----
+   TIER_RP : prix neuf de référence d'un sweat / d'une chemise du tier (× adj de la marque)
+   RET     : cote seconde main Vinted en très bon état (part du prix neuf réellement encaissée)
+   TYPE_RF : prix neuf relatif de chaque catégorie (sweat = 1)
+   RF_EXP  : en premium/luxe l'écart de prix entre catégories est plus plat (un t-shirt Gucci n'est pas 2× moins cher qu'un sweat) */
+const TIER_RP={1:30,2:40,3:75,4:170,5:700};
+const RET={1:.2,2:.2,3:.27,4:.27,5:.3};
+const RF_EXP={1:1,2:1,3:1,4:.8,5:.6};
+const TYPE_RF={"Sweat":1,"Hoodie":1.1,"Pull":1,"Gilet / Zip":1.05,"Cardigan":1,"T-shirt":.5,"Polo":.75,"Chemise":.9,"Blouse":.8,"Top":.5,"Débardeur":.4,"Body":.5,
+  "Veste":1.8,"Blouson":1.8,"Doudoune":2.6,"Manteau":2.6,"Trench":2.4,"Blazer":1.8,"Costume":3,"Pantalon":1,"Jean":1.2,"Jogging":.9,"Legging":.6,"Short":.6,"Survêtement":1.6,
+  "Robe":1.2,"Jupe":.8,"Combinaison":1.2,"Maillot de bain":.6,"Lingerie":.5,"Pyjama":.6,"Chaussures":1.6,"Sac":1.5,"Portefeuille":.8,"Ceinture":.6,"Écharpe":.6,"Bonnet / Casquette":.45,
+  "Lunettes":1.2,"Montre":2,"Bijou":.6,"Accessoire":.6,"Autre":.8};
+function retailOf(br,type){ const t=br?br.tier:2, adj=br?br.adj:.6; return TIER_RP[t]*adj*Math.pow(TYPE_RF[type]||.8,RF_EXP[t]) }
 const TIER_LABEL={1:"Fast fashion",2:"Grand public",3:"Milieu de gamme",4:"Premium",5:"Luxe"};
 const BRAND_LIST=[];const BRANDS={};
 function B(names,tier,adj,style,sigs,tags,hot,origin,pop){const n=names.split("|");const b={name:n[0],aliases:n.slice(1),tier,adj,style,sigs,tags,hot:hot||{},origin:origin||"",pop:!!pop};BRAND_LIST.push(b);n.forEach(x=>BRANDS[norm(x)]=b)}
 // --- Luxe & créateurs
-B("Stone Island",5,1.6,"streetwear premium",["le badge boussole le plus recherché du streetwear","une pièce de collection"],["stoneisland","streetwear","designer"],{Sweat:1.1,Hoodie:1.1,Veste:1.15,Doudoune:1.1},"Italie",1);
-B("C.P. Company|CP Company",5,1.3,"streetwear premium",["l'héritage italien de Massimo Osti","une pièce recherchée des connaisseurs"],["cpcompany","streetwear","designer"],{Veste:1.15},"Italie",1);
-B("Moncler",5,1.5,"luxe",["la doudoune de luxe par excellence","une pièce de luxe authentique"],["moncler","luxe"],{Doudoune:1.3},"Italie",1);
+B("Stone Island",5,0.6,"streetwear premium",["le badge boussole le plus recherché du streetwear","une pièce de collection"],["stoneisland","streetwear","designer"],{Sweat:1.1,Hoodie:1.1,Veste:1.15,Doudoune:1.1},"Italie",1);
+B("C.P. Company|CP Company",5,0.55,"streetwear premium",["l'héritage italien de Massimo Osti","une pièce recherchée des connaisseurs"],["cpcompany","streetwear","designer"],{Veste:1.15},"Italie",1);
+B("Moncler",5,1.1,"luxe",["la doudoune de luxe par excellence","une pièce de luxe authentique"],["moncler","luxe"],{Doudoune:1.3},"Italie",1);
 B("Canada Goose",5,1.1,"luxe outdoor",["la référence des parkas grand froid","une pièce ultra recherchée"],["canadagoose","luxe","parka"],{Doudoune:1.3,Manteau:1.2},"Canada");
-B("Burberry",5,1,"luxe british",["le check iconique","l'élégance britannique"],["burberry","luxe","british"],{Manteau:1.2,Chemise:1.1},"Royaume-Uni",1);
+B("Burberry",5,0.9,"luxe british",["le check iconique","l'élégance britannique"],["burberry","luxe","british"],{Manteau:1.2,Chemise:1.1},"Royaume-Uni",1);
 B("Gucci",5,1.1,"luxe",["une pièce de luxe signée Gucci","le luxe italien"],["gucci","luxe","designer"],{},"Italie");
 B("Prada",5,1,"luxe minimal",["le minimalisme luxe italien","une pièce de luxe recherchée"],["prada","luxe","designer"],{},"Italie");
 B("Louis Vuitton",5,1.3,"luxe",["le monogramme le plus célèbre au monde","une pièce de luxe"],["louisvuitton","luxe"],{},"France");
 B("Dior",5,1.1,"luxe",["l'élégance de la maison Dior","une pièce de luxe"],["dior","luxe"],{},"France");
 B("Saint Laurent|Yves Saint Laurent|YSL",5,1,"luxe rock",["l'allure rock parisienne","une pièce de luxe"],["saintlaurent","luxe"],{},"France");
 B("Balenciaga",5,1,"luxe streetwear",["le luxe streetwear","une pièce signature"],["balenciaga","luxe","streetwear"],{Hoodie:1.1,Sweat:1.1},"France");
-B("Loro Piana",5,2.2,"luxe discret",["le cachemire le plus fin au monde","le luxe discret par excellence"],["loropiana","oldmoney","quietluxury"],{Pull:1.3,Gilet:1.3},"Italie");
+B("Loro Piana",5,1.4,"luxe discret",["le cachemire le plus fin au monde","le luxe discret par excellence"],["loropiana","oldmoney","quietluxury"],{Pull:1.3,Gilet:1.3},"Italie");
 B("Brunello Cucinelli",5,1.1,"luxe discret",["le roi du cachemire","l'élégance italienne discrète"],["brunellocucinelli","quietluxury"],{Pull:1.25},"Italie");
 B("Zegna|Ermenegildo Zegna",5,.85,"luxe tailoring",["l'excellence du tailoring italien","une matière d'exception"],["zegna","menswear","tailoring"],{Blazer:1.2,Manteau:1.15},"Italie");
 B("Maison Margiela|Margiela|MM6",5,.85,"créateur",["les quatre coutures iconiques","une pièce de créateur"],["margiela","designer","avantgarde"],{},"France");
-B("Acne Studios|Acne",5,.7,"créateur scandinave",["le minimalisme scandinave","une pièce de créateur"],["acnestudios","designer","minimal"],{},"Suède");
-B("Ami Paris|AMI",5,1,"créateur parisien",["le petit cœur brodé iconique","le chic parisien décontracté"],["amiparis","designer","parisian"],{Sweat:1.15,Pull:1.15},"France",1);
-B("Jacquemus",5,.65,"créateur",["l'esprit solaire du sud","une pièce de créateur"],["jacquemus","designer"],{},"France");
-B("Supreme",5,1.4,"streetwear culte",["le box logo mythique","une pièce de collection streetwear"],["supreme","streetwear","hype"],{Hoodie:1.2,Sweat:1.2,"T-shirt":1.4},"États-Unis");
-B("Arc'teryx|Arcteryx",5,1.1,"outdoor technique",["la référence technique ultime","ultra recherché en gorpcore"],["arcteryx","gorpcore","outdoor"],{Veste:1.25,Doudoune:1.15},"Canada",1);
+B("Acne Studios|Acne",5,0.5,"créateur scandinave",["le minimalisme scandinave","une pièce de créateur"],["acnestudios","designer","minimal"],{},"Suède");
+B("Ami Paris|AMI",5,0.55,"créateur parisien",["le petit cœur brodé iconique","le chic parisien décontracté"],["amiparis","designer","parisian"],{Sweat:1.15,Pull:1.15},"France",1);
+B("Jacquemus",5,0.55,"créateur",["l'esprit solaire du sud","une pièce de créateur"],["jacquemus","designer"],{},"France");
+B("Supreme",5,0.7,"streetwear culte",["le box logo mythique","une pièce de collection streetwear"],["supreme","streetwear","hype"],{Hoodie:1.2,Sweat:1.2,"T-shirt":1.4},"États-Unis");
+B("Arc'teryx|Arcteryx",5,0.8,"outdoor technique",["la référence technique ultime","ultra recherché en gorpcore"],["arcteryx","gorpcore","outdoor"],{Veste:1.25,Doudoune:1.15},"Canada",1);
 B("Off-White|Off White",5,.6,"streetwear designer",["le streetwear de créateur","une pièce signature"],["offwhite","streetwear","designer"],{},"Italie");
 B("A Bathing Ape|Bape",5,.6,"streetwear japonais",["le camo iconique","une pièce culte du streetwear japonais"],["bape","streetwear","hype"],{Hoodie:1.2},"Japon");
 // --- Premium
-B("Ralph Lauren|Polo Ralph Lauren|Polo by Ralph Lauren|Polo Sport|Chaps",4,1,"preppy",["l'élégance preppy par excellence","un classique intemporel du vestiaire masculin","le petit poney, tout simplement"],["ralphlauren","poloralphlauren","preppy","oldmoney"],{Polo:1.25,Chemise:1.15,Pull:1.2,"Gilet / Zip":1.15},"États-Unis",1);
-B("Lacoste|Lacoste Sport|Lacoste Live",4,.95,"sport chic",["le crocodile iconique","l'élégance décontractée à la française"],["lacoste","sportchic","frenchstyle"],{Polo:1.35,Sweat:1.1,Veste:1.1},"France",1);
-B("Carhartt WIP|Carhartt Work In Progress",4,1,"workwear streetwear",["le workwear version streetwear","robuste, ample et indémodable"],["carharttwip","carhartt","workwear","streetwear"],{Veste:1.3,Sweat:1.15,Hoodie:1.15,Pantalon:1.2},"Allemagne",1);
-B("Carhartt",4,.95,"workwear",["du pur workwear américain","robuste et indémodable"],["carhartt","workwear","americana"],{Veste:1.35,Hoodie:1.25,Sweat:1.25,Pantalon:1.15},"États-Unis",1);
-B("The North Face|TNF",4,1,"outdoor",["la référence outdoor","parfait pour un look gorpcore"],["thenorthface","tnf","gorpcore","outdoor"],{Doudoune:1.35,Veste:1.25,Hoodie:1.1},"États-Unis",1);
-B("Patagonia",4,1.15,"outdoor responsable",["la référence outdoor responsable","chaud, léger et pensé pour durer"],["patagonia","gorpcore","outdoor"],{Veste:1.25,"Gilet / Zip":1.3,Doudoune:1.2},"États-Unis",1);
+B("Ralph Lauren|Polo Ralph Lauren|Polo by Ralph Lauren|Polo Sport|Chaps",4,0.9,"preppy",["l'élégance preppy par excellence","un classique intemporel du vestiaire masculin","le petit poney, tout simplement"],["ralphlauren","poloralphlauren","preppy","oldmoney"],{Polo:1.25,Chemise:1.15,Pull:1.2,"Gilet / Zip":1.15},"États-Unis",1);
+B("Lacoste|Lacoste Sport|Lacoste Live",4,0.8,"sport chic",["le crocodile iconique","l'élégance décontractée à la française"],["lacoste","sportchic","frenchstyle"],{Polo:1.35,Sweat:1.1,Veste:1.1},"France",1);
+B("Carhartt WIP|Carhartt Work In Progress",4,0.9,"workwear streetwear",["le workwear version streetwear","robuste, ample et indémodable"],["carharttwip","carhartt","workwear","streetwear"],{Veste:1.3,Sweat:1.15,Hoodie:1.15,Pantalon:1.2},"Allemagne",1);
+B("Carhartt",4,0.7,"workwear",["du pur workwear américain","robuste et indémodable"],["carhartt","workwear","americana"],{Veste:1.35,Hoodie:1.25,Sweat:1.25,Pantalon:1.15},"États-Unis",1);
+B("The North Face|TNF",4,0.85,"outdoor",["la référence outdoor","parfait pour un look gorpcore"],["thenorthface","tnf","gorpcore","outdoor"],{Doudoune:1.35,Veste:1.25,Hoodie:1.1},"États-Unis",1);
+B("Patagonia",4,0.95,"outdoor responsable",["la référence outdoor responsable","chaud, léger et pensé pour durer"],["patagonia","gorpcore","outdoor"],{Veste:1.25,"Gilet / Zip":1.3,Doudoune:1.2},"États-Unis",1);
 B("Barbour|Barbour International",4,1.3,"heritage british",["l'héritage britannique","une pièce qui traverse les années"],["barbour","british","heritage"],{Veste:1.5,Manteau:1.3},"Royaume-Uni",1);
-B("Hugo Boss|Boss|Hugo",4,.95,"chic",["une coupe soignée","l'allure chic et sobre"],["hugoboss","boss","menswear"],{Blazer:1.15,Chemise:1.05},"Allemagne",1);
-B("Tommy Hilfiger",4,.9,"preppy américain",["le style preppy américain","un basique qui va avec tout"],["tommyhilfiger","preppy","90s"],{Sweat:1.1,Doudoune:1.1,Chemise:1.1},"États-Unis",1);
-B("Tommy Jeans",3,1.05,"streetwear 90s",["l'esprit 90s de Tommy","un look streetwear rétro"],["tommyjeans","90s","streetwear"],{Sweat:1.1,Hoodie:1.1},"États-Unis",1);
-B("Gant",4,1,"preppy",["l'esprit preppy de la côte Est","une qualité reconnue"],["gant","preppy"],{Chemise:1.2,Pull:1.1},"Suède",1);
-B("Napapijri",4,.8,"outdoor urbain",["le look outdoor reconnaissable entre mille","chaud et stylé"],["napapijri","outdoor"],{Doudoune:1.2,Veste:1.15},"Italie",1);
-B("Fred Perry",4,1,"british mod",["l'icône british","la couronne de laurier mythique"],["fredperry","british","mod"],{Polo:1.3,Sweat:1.05},"Royaume-Uni",1);
+B("Hugo Boss|Boss|Hugo",4,0.7,"chic",["une coupe soignée","l'allure chic et sobre"],["hugoboss","boss","menswear"],{Blazer:1.15,Chemise:1.05},"Allemagne",1);
+B("Tommy Hilfiger",4,0.65,"preppy américain",["le style preppy américain","un basique qui va avec tout"],["tommyhilfiger","preppy","90s"],{Sweat:1.1,Doudoune:1.1,Chemise:1.1},"États-Unis",1);
+B("Tommy Jeans",3,1.2,"streetwear 90s",["l'esprit 90s de Tommy","un look streetwear rétro"],["tommyjeans","90s","streetwear"],{Sweat:1.1,Hoodie:1.1},"États-Unis",1);
+B("Gant",4,0.8,"preppy",["l'esprit preppy de la côte Est","une qualité reconnue"],["gant","preppy"],{Chemise:1.2,Pull:1.1},"Suède",1);
+B("Napapijri",4,0.75,"outdoor urbain",["le look outdoor reconnaissable entre mille","chaud et stylé"],["napapijri","outdoor"],{Doudoune:1.2,Veste:1.15},"Italie",1);
+B("Fred Perry",4,0.8,"british mod",["l'icône british","la couronne de laurier mythique"],["fredperry","british","mod"],{Polo:1.3,Sweat:1.05},"Royaume-Uni",1);
 B("Paul & Shark|Paul and Shark",4,1,"chic nautique",["le chic italien nautique","une qualité premium"],["paulandshark","nautical","oldmoney"],{Pull:1.15,Veste:1.15},"Italie");
 B("Hackett|Hackett London",4,.9,"british chic",["le chic londonien","une qualité irréprochable"],["hackett","british","preppy"],{Chemise:1.1,Polo:1.1},"Royaume-Uni");
 B("Maison Kitsuné|Maison Kitsune|Kitsuné",4,1.5,"designer parisien",["le renard iconique","une pièce de créateur accessible"],["maisonkitsune","designer","parisian"],{Sweat:1.2,"T-shirt":1.3},"France",1);
 B("Kenzo",4,1.4,"designer",["le tigre iconique","une pièce forte de créateur"],["kenzo","designer"],{Sweat:1.25,"T-shirt":1.2},"France",1);
 B("Stüssy|Stussy",4,1.1,"streetwear culte",["une icône du streetwear californien","très recherché"],["stussy","streetwear","skate"],{Hoodie:1.15,"T-shirt":1.3},"États-Unis",1);
-B("Schott|Schott NYC",4,1,"heritage",["l'héritage new-yorkais","une pièce de caractère"],["schott","heritage","biker"],{Veste:1.35,Doudoune:1.1},"États-Unis",1);
-B("Belstaff",4,1.1,"heritage moto",["l'héritage moto britannique","une pièce de caractère"],["belstaff","heritage","british"],{Veste:1.3},"Royaume-Uni");
-B("Fjällräven|Fjallraven",4,.9,"outdoor scandinave",["l'outdoor scandinave","robuste et intemporel"],["fjallraven","outdoor"],{Veste:1.2},"Suède");
-B("A.P.C.|APC",4,1.3,"minimal parisien",["le minimalisme parisien","une pièce sobre et bien coupée"],["apc","minimal","parisian"],{Jean:1.3,Sweat:1.1},"France",1);
-B("Sandro|Sandro Paris",4,.75,"chic parisien",["le chic parisien","une coupe moderne"],["sandro","parisian","menswear"],{Blazer:1.1,Pull:1.05},"France",1);
-B("The Kooples",4,.7,"rock chic",["l'esprit rock chic","une pièce de caractère"],["thekooples","rockchic"],{Blazer:1.1,Chemise:1.05},"France",1);
-B("Zadig & Voltaire|Zadig et Voltaire|Zadig",4,.75,"rock chic",["l'esprit rock parisien","une pièce de caractère"],["zadigetvoltaire","rockchic"],{Pull:1.15,"T-shirt":1.1},"France");
-B("Eden Park",4,.75,"rugby chic",["le nœud papillon rose iconique","l'élégance rugby"],["edenpark","rugby","preppy"],{Polo:1.2,Pull:1.1},"France",1);
+B("Schott|Schott NYC",4,1.5,"heritage",["l'héritage new-yorkais","une pièce de caractère"],["schott","heritage","biker"],{Veste:1.35,Doudoune:1.1},"États-Unis",1);
+B("Belstaff",4,2,"heritage moto",["l'héritage moto britannique","une pièce de caractère"],["belstaff","heritage","british"],{Veste:1.3},"Royaume-Uni");
+B("Fjällräven|Fjallraven",4,1,"outdoor scandinave",["l'outdoor scandinave","robuste et intemporel"],["fjallraven","outdoor"],{Veste:1.2},"Suède");
+B("A.P.C.|APC",4,1.4,"minimal parisien",["le minimalisme parisien","une pièce sobre et bien coupée"],["apc","minimal","parisian"],{Jean:1.3,Sweat:1.1},"France",1);
+B("Sandro|Sandro Paris",4,1,"chic parisien",["le chic parisien","une coupe moderne"],["sandro","parisian","menswear"],{Blazer:1.1,Pull:1.05},"France",1);
+B("The Kooples",4,0.9,"rock chic",["l'esprit rock chic","une pièce de caractère"],["thekooples","rockchic"],{Blazer:1.1,Chemise:1.05},"France",1);
+B("Zadig & Voltaire|Zadig et Voltaire|Zadig",4,0.9,"rock chic",["l'esprit rock parisien","une pièce de caractère"],["zadigetvoltaire","rockchic"],{Pull:1.15,"T-shirt":1.1},"France");
+B("Eden Park",4,0.85,"rugby chic",["le nœud papillon rose iconique","l'élégance rugby"],["edenpark","rugby","preppy"],{Polo:1.2,Pull:1.1},"France",1);
 B("Façonnable|Faconnable",4,.7,"chic méditerranéen",["le chic de la Riviera","une qualité reconnue"],["faconnable","chic","riviera"],{Chemise:1.1,Veste:1.1},"France");
 B("De Fursac|Fursac",4,.8,"tailoring parisien",["le tailoring parisien","une coupe impeccable"],["defursac","tailoring","menswear"],{Blazer:1.3,Manteau:1.2},"France");
 B("Saint James",4,.75,"marin",["la marinière authentique","tricoté en Normandie"],["saintjames","mariniere","frenchstyle"],{Pull:1.3,"T-shirt":1.2},"France",1);
-B("Armor Lux|Armor-Lux",3,1.05,"marin",["le style marin breton","une maille robuste"],["armorlux","mariniere","bretagne"],{Pull:1.2,"T-shirt":1.15},"France",1);
-B("Woolrich",4,1,"heritage outdoor",["l'héritage américain du grand froid","une parka de référence"],["woolrich","heritage","parka"],{Doudoune:1.3,Manteau:1.25},"États-Unis");
-B("Pyrenex",4,1,"doudoune française",["le duvet français depuis 1859","chaud et élégant"],["pyrenex","doudoune","madeinfrance"],{Doudoune:1.3},"France");
+B("Armor Lux|Armor-Lux",3,1.2,"marin",["le style marin breton","une maille robuste"],["armorlux","mariniere","bretagne"],{Pull:1.2,"T-shirt":1.15},"France",1);
+B("Woolrich",4,1.5,"heritage outdoor",["l'héritage américain du grand froid","une parka de référence"],["woolrich","heritage","parka"],{Doudoune:1.3,Manteau:1.25},"États-Unis");
+B("Pyrenex",4,1.4,"doudoune française",["le duvet français depuis 1859","chaud et élégant"],["pyrenex","doudoune","madeinfrance"],{Doudoune:1.3},"France");
 B("JOTT|Just Over The Top",3,1.15,"doudoune légère",["la doudoune légère par excellence","pratique et reconnaissable"],["jott","doudoune"],{Doudoune:1.3},"France",1);
 B("Emporio Armani|Armani|Giorgio Armani|Armani Exchange|EA7|Armani Jeans",4,.75,"chic italien",["l'élégance italienne","une coupe soignée"],["armani","emporioarmani","italianstyle"],{Blazer:1.15,Doudoune:1.1},"Italie",1);
 B("Paul Smith|PS Paul Smith",4,.85,"british coloré",["le chic britannique avec une touche de couleur","les rayures signature"],["paulsmith","british","menswear"],{Chemise:1.1,Blazer:1.15},"Royaume-Uni");
@@ -490,14 +503,14 @@ B("Hartford",4,.7,"casual chic",["le casual chic franco-américain","de belles m
 B("Figaret|Figaret Paris",4,.7,"chemisier parisien",["le chemisier parisien de référence","un tissu de qualité"],["figaret","chemise","parisian"],{Chemise:1.3},"France");
 B("Haglöfs|Haglofs",4,.8,"outdoor scandinave",["l'outdoor suédois technique","fiable et durable"],["haglofs","outdoor","gorpcore"],{Veste:1.2},"Suède");
 B("Mammut",4,.8,"outdoor alpin",["la technique alpine suisse","une pièce fiable en montagne"],["mammut","outdoor","gorpcore"],{Veste:1.2,Doudoune:1.1},"Suisse");
-B("Jordan|Air Jordan",4,.8,"sportswear hype",["l'héritage de MJ","une pièce recherchée des sneakerheads"],["jordan","airjordan","streetwear"],{Hoodie:1.15,Sweat:1.1},"États-Unis",1);
+B("Jordan|Air Jordan",4,1,"sportswear hype",["l'héritage de MJ","une pièce recherchée des sneakerheads"],["jordan","airjordan","streetwear"],{Hoodie:1.15,Sweat:1.1},"États-Unis",1);
 B("Lyle & Scott|Lyle and Scott",3,1.05,"british casual",["l'aigle doré iconique","le casual écossais"],["lyleandscott","british","casual"],{Pull:1.1,Polo:1.05},"Écosse",1);
 // --- Milieu de gamme
 B("Levi's|Levis|Levi Strauss",3,1.2,"denim culte",["une marque culte","le denim de référence depuis 1873"],["levis","denim","vintage"],{Jean:1.4,Veste:1.4},"États-Unis",1);
 B("Nike",3,1.1,"sportswear",["un incontournable du sportswear","confort et style au quotidien"],["nike","sportswear","streetwear"],{Sweat:1.1,Hoodie:1.15,Veste:1.15},"États-Unis",1);
 B("Adidas|Adidas Originals",3,1.15,"sportswear",["les trois bandes iconiques","un classique du sportswear"],["adidas","sportswear","streetwear"],{Veste:1.25,Sweat:1.1},"Allemagne",1);
 B("Champion",3,1,"sportswear vintage",["le sportswear américain d'origine","un esprit college vintage"],["champion","vintage","college"],{Sweat:1.2,Hoodie:1.2},"États-Unis",1);
-B("New Balance",3,1.1,"sportswear",["le style dad sport","confortable et tendance"],["newbalance","sportswear"],{},"États-Unis",1);
+B("New Balance",3,1.6,"sportswear",["le style dad sport","confortable et tendance"],["newbalance","sportswear"],{},"États-Unis",1);
 B("Puma",3,.85,"sportswear",["un classique du sport","sportswear rétro"],["puma","sportswear"],{},"Allemagne",1);
 B("Reebok",3,.8,"sportswear rétro",["le sportswear 90s","un look rétro"],["reebok","retro","90s"],{},"États-Unis");
 B("Under Armour",3,.75,"sport technique",["la performance au quotidien","technique et confortable"],["underarmour","sport"],{},"États-Unis");
@@ -510,9 +523,9 @@ B("Umbro",2,1,"football rétro",["le double losange iconique","l'esprit football
 B("Dickies",3,1.3,"workwear",["le workwear américain","robuste et streetwear"],["dickies","workwear","skate"],{Pantalon:1.3,Veste:1.2},"États-Unis",1);
 B("Columbia",3,1,"outdoor",["confortable et pratique","parfait au quotidien"],["columbia","outdoor"],{Veste:1.2,Doudoune:1.15,"Gilet / Zip":1.2},"États-Unis",1);
 B("Helly Hansen",3,1.1,"outdoor norvégien",["l'expertise outdoor norvégienne","technique et stylé"],["hellyhansen","outdoor","gorpcore"],{Veste:1.25,Doudoune:1.15},"Norvège",1);
-B("Timberland",3,1,"outdoor",["l'esprit outdoor","robuste et confortable"],["timberland","outdoor"],{Veste:1.1},"États-Unis",1);
+B("Timberland",3,1.3,"outdoor",["l'esprit outdoor","robuste et confortable"],["timberland","outdoor"],{Veste:1.1},"États-Unis",1);
 B("Jack Wolfskin",3,.85,"outdoor",["l'outdoor allemand","fiable et pratique"],["jackwolfskin","outdoor"],{Veste:1.15},"Allemagne");
-B("Salomon",3,1.1,"outdoor technique",["la technique trail","très recherché en gorpcore"],["salomon","gorpcore","trail"],{Veste:1.2},"France");
+B("Salomon",3,1.5,"outdoor technique",["la technique trail","très recherché en gorpcore"],["salomon","gorpcore","trail"],{Veste:1.2},"France");
 B("Lafuma",3,.85,"outdoor français",["l'outdoor français","pratique et solide"],["lafuma","outdoor"],{Veste:1.1},"France");
 B("Millet",3,.9,"montagne",["la montagne à la française","technique et fiable"],["millet","outdoor","montagne"],{Veste:1.15,Doudoune:1.1},"France");
 B("Eider",3,.85,"montagne",["l'esprit montagne","technique et chaud"],["eider","outdoor","ski"],{Veste:1.1},"France");
@@ -555,7 +568,7 @@ B("Brice",2,.9,"casual chic",["un basique bien coupé","un look casual chic"],["
 B("Uniqlo",2,1.05,"basiques japonais",["le basique japonais bien pensé","des matières confortables"],["uniqlo","basics","minimal"],{Doudoune:1.3,Pull:1.15},"Japon",1);
 B("Celio",1,1,"casual",["un basique pratique","confortable au quotidien"],["celio","casual"],{},"France",1);
 B("Jules",1,1,"casual",["un basique du quotidien","un look casual"],["jules","casual"],{},"France",1);
-B("Zara|Zara Man",1,1.1,"tendance",["une pièce tendance","un look moderne"],["zara","zaraman"],{Blazer:1.3,Manteau:1.3,Veste:1.2},"Espagne",1);
+B("Zara|Zara Man",1,1.3,"tendance",["une pièce tendance","un look moderne"],["zara","zaraman"],{Blazer:1.3,Manteau:1.3,Veste:1.2},"Espagne",1);
 B("H&M|H&M Man|HM",1,.9,"basique",["un basique du quotidien","simple et efficace"],["hm","basics"],{},"Suède",1);
 B("Pull&Bear|Pull and Bear",1,.95,"streetwear jeune",["un look streetwear décontracté","une pièce tendance"],["pullandbear","streetwear"],{},"Espagne",1);
 B("Bershka",1,.9,"tendance jeune",["une pièce tendance","un look urbain"],["bershka","streetwear"],{},"Espagne");
@@ -564,16 +577,16 @@ B("Kiabi",1,.65,"petit prix",["un basique du quotidien","pratique"],["kiabi"],{}
 B("Shein",1,.5,"fast fashion",["une pièce tendance","un look rapide"],["shein"],{},"Chine");
 B("Decathlon|Quechua|Kipsta|Domyos|Kalenji",1,1,"sport accessible",["le sport accessible","pratique et solide"],["decathlon","quechua","outdoor"],{Veste:1.2,Doudoune:1.2},"France",1);
 // --- Luxe accessible & maroquinerie
-B("Michael Kors|MK|Michael Michael Kors",4,1.1,"luxe accessible",["le luxe accessible new-yorkais","un logo MK reconnaissable entre mille"],["michaelkors","mk","luxeaccessible"],{Sac:1.4,Manteau:1.15,Doudoune:1.15},"États-Unis",1);
-B("Coach",4,1.1,"maroquinerie américaine",["le cuir new-yorkais depuis 1941","une maroquinerie de qualité"],["coach","maroquinerie"],{Sac:1.4},"États-Unis",1);
+B("Michael Kors|MK|Michael Michael Kors",4,1.3,"luxe accessible",["le luxe accessible new-yorkais","un logo MK reconnaissable entre mille"],["michaelkors","mk","luxeaccessible"],{Sac:1.4,Manteau:1.15,Doudoune:1.15},"États-Unis",1);
+B("Coach",4,1.3,"maroquinerie américaine",["le cuir new-yorkais depuis 1941","une maroquinerie de qualité"],["coach","maroquinerie"],{Sac:1.4},"États-Unis",1);
 B("Kate Spade",4,.9,"preppy coloré",["le preppy new-yorkais coloré","une pièce pleine de peps"],["katespade","preppy"],{Sac:1.3},"États-Unis");
-B("Marc Jacobs",4,1.2,"créateur",["le style new-yorkais signé Marc Jacobs","une pièce de créateur"],["marcjacobs","designer"],{Sac:1.4,"T-shirt":1.2},"États-Unis",1);
-B("Tory Burch",4,1.1,"chic américain",["le chic bohème américain","le logo double T iconique"],["toryburch","chic"],{Sac:1.3,Chaussures:1.2},"États-Unis");
+B("Marc Jacobs",4,1.8,"créateur",["le style new-yorkais signé Marc Jacobs","une pièce de créateur"],["marcjacobs","designer"],{Sac:1.4,"T-shirt":1.2},"États-Unis",1);
+B("Tory Burch",4,1.5,"chic américain",["le chic bohème américain","le logo double T iconique"],["toryburch","chic"],{Sac:1.3,Chaussures:1.2},"États-Unis");
 B("Longchamp",4,1.1,"maroquinerie française",["le savoir-faire français depuis 1948","le Pliage iconique"],["longchamp","maroquinerie","frenchstyle"],{Sac:1.4},"France",1);
-B("Lancel",4,1,"maroquinerie française",["la maison parisienne depuis 1876","un cuir de qualité"],["lancel","maroquinerie"],{Sac:1.3},"France");
+B("Lancel",4,0.9,"maroquinerie française",["la maison parisienne depuis 1876","un cuir de qualité"],["lancel","maroquinerie"],{Sac:1.3},"France");
 B("Furla",4,.9,"maroquinerie italienne",["le cuir italien coloré","une maroquinerie élégante"],["furla","maroquinerie"],{Sac:1.3},"Italie");
 B("Guess Marciano|Marciano",3,.9,"glamour",["le glamour signé Marciano","une pièce habillée"],["marciano","glamour"],{Robe:1.2},"États-Unis");
-B("Karl Lagerfeld",4,1,"chic parisien",["la signature de Karl","une pièce rock chic"],["karllagerfeld","designer"],{Sac:1.2,Sweat:1.1},"France",1);
+B("Karl Lagerfeld",4,0.85,"chic parisien",["la signature de Karl","une pièce rock chic"],["karllagerfeld","designer"],{Sac:1.2,Sweat:1.1},"France",1);
 B("Versace|Versace Jeans Couture|Versus",5,.9,"luxe italien",["la Méduse iconique","le luxe italien flamboyant"],["versace","luxe"],{},"Italie");
 B("Dolce & Gabbana|Dolce Gabbana|D&G",5,.9,"luxe italien",["l'exubérance sicilienne","une pièce de luxe"],["dolcegabbana","luxe"],{},"Italie");
 B("Fendi",5,1.1,"luxe",["le double F iconique","une pièce de luxe romaine"],["fendi","luxe"],{Sac:1.3},"Italie");
@@ -582,7 +595,7 @@ B("Givenchy",5,1,"luxe",["l'élégance parisienne","une pièce de luxe"],["given
 B("Celine|Céline",5,1.2,"luxe minimal",["le minimalisme chic de Celine","une pièce très recherchée"],["celine","luxe","quietluxury"],{Sac:1.3},"France");
 B("Chloé",5,1,"luxe bohème",["le chic bohème parisien","une pièce de luxe"],["chloe","luxe"],{Sac:1.3},"France");
 B("See by Chloé",4,1,"bohème chic",["la ligne jeune de Chloé","le bohème chic"],["seebychloe","boheme"],{Sac:1.2},"France");
-B("Isabel Marant|Isabel Marant Étoile|Marant Etoile",5,.9,"bohème parisien",["le chic bohème parisien","une pièce de créateur très recherchée"],["isabelmarant","boheme","parisian"],{Veste:1.2,Pull:1.15},"France",1);
+B("Isabel Marant|Isabel Marant Étoile|Marant Etoile",5,0.5,"bohème parisien",["le chic bohème parisien","une pièce de créateur très recherchée"],["isabelmarant","boheme","parisian"],{Veste:1.2,Pull:1.15},"France",1);
 B("Max Mara|Weekend Max Mara|Max&Co",5,.9,"luxe italien",["l'élégance italienne intemporelle","des matières d'exception"],["maxmara","quietluxury"],{Manteau:1.4},"Italie");
 B("Moschino|Love Moschino",4,.9,"pop",["l'esprit pop de Moschino","une pièce qui ne passe pas inaperçue"],["moschino","pop"],{},"Italie");
 B("Pinko",4,.8,"glamour italien",["le glamour italien","une pièce habillée"],["pinko","glamour"],{Sac:1.2},"Italie");
@@ -591,18 +604,18 @@ B("Twinset|Twin-Set",4,.75,"romantique",["le romantisme italien","une maille soi
 B("Patrizia Pepe",4,.75,"chic italien",["le chic italien moderne","une coupe soignée"],["patriziapepe","italianstyle"],{},"Italie");
 B("Elisabetta Franchi",4,.8,"glamour",["le glamour italien assumé","une pièce habillée"],["elisabettafranchi","glamour"],{Robe:1.2},"Italie");
 // --- Prêt-à-porter français & mixte
-B("Maje",4,.8,"chic parisien",["le chic parisien féminin","une pièce tendance"],["maje","parisian"],{Robe:1.15,Veste:1.1},"France",1);
-B("Claudie Pierlot",4,.8,"chic parisien",["le chic parisien sage","une coupe soignée"],["claudiepierlot","parisian"],{},"France",1);
-B("Ba&sh|Bash",4,.85,"bohème chic",["le bohème chic parisien","une pièce féminine recherchée"],["bash","boheme","parisian"],{Robe:1.2},"France",1);
+B("Maje",4,0.9,"chic parisien",["le chic parisien féminin","une pièce tendance"],["maje","parisian"],{Robe:1.15,Veste:1.1},"France",1);
+B("Claudie Pierlot",4,0.9,"chic parisien",["le chic parisien sage","une coupe soignée"],["claudiepierlot","parisian"],{},"France",1);
+B("Ba&sh|Bash",4,0.95,"bohème chic",["le bohème chic parisien","une pièce féminine recherchée"],["bash","boheme","parisian"],{Robe:1.2},"France",1);
 B("Sézane|Sezane",4,1,"parisien",["la marque parisienne culte","très recherchée en seconde main"],["sezane","parisian"],{Pull:1.2,Robe:1.2,Veste:1.15},"France",1);
-B("Rouje",4,.9,"parisien",["l'esprit parisien de Jeanne Damas","une pièce féminine"],["rouje","parisian"],{Robe:1.2},"France");
-B("Soeur",4,.9,"parisien minimal",["le minimalisme parisien","de belles matières"],["soeur","minimal","parisian"],{},"France");
+B("Rouje",4,1.5,"parisien",["l'esprit parisien de Jeanne Damas","une pièce féminine"],["rouje","parisian"],{Robe:1.2},"France");
+B("Soeur",4,1.1,"parisien minimal",["le minimalisme parisien","de belles matières"],["soeur","minimal","parisian"],{},"France");
 B("Balzac Paris",3,1,"parisien",["le style parisien accessible","une pièce de bonne facture"],["balzacparis","parisian"],{},"France",1);
 B("Octobre Éditions|Octobre",4,.9,"parisien homme",["le vestiaire masculin de Sézane","des matières soignées"],["octobre","parisian","menswear"],{Pull:1.15,Chemise:1.1},"France",1);
 B("Comptoir des Cotonniers",3,.9,"casual chic",["le casual chic français","des matières naturelles"],["comptoirdescotonniers","casualchic"],{},"France",1);
 B("American Vintage",3,1.05,"basiques premium",["les basiques premium marseillais","une matière ultra douce"],["americanvintage","basics"],{"T-shirt":1.3,Pull:1.15},"France",1);
 B("Bellerose",4,.9,"casual belge",["le casual belge soigné","une pièce de caractère"],["bellerose","casual"],{},"Belgique");
-B("Sessùn|Sessun",4,.9,"bohème",["le bohème marseillais","de belles matières"],["sessun","boheme"],{},"France");
+B("Sessùn|Sessun",4,1,"bohème",["le bohème marseillais","de belles matières"],["sessun","boheme"],{},"France");
 B("Des Petits Hauts",4,.8,"romantique",["le romantisme parisien","une maille délicate"],["despetitshauts","romantic"],{Pull:1.1},"France");
 B("Gérard Darel|Gerard Darel",4,.75,"chic classique",["le chic classique français","une belle qualité"],["gerarddarel","chic"],{Manteau:1.15},"France");
 B("Zapa",4,.7,"chic parisien",["le chic parisien discret","une coupe soignée"],["zapa","chic"],{},"France");
@@ -643,11 +656,11 @@ B("COS",3,1.15,"minimal scandinave",["le minimalisme scandinave","des coupes arc
 B("Arket",3,1.1,"minimal nordique",["l'essentiel nordique","des matières durables"],["arket","minimal"],{},"Suède",1);
 B("& Other Stories|And Other Stories|Other Stories",3,1,"tendance",["une pièce féminine tendance","un style scandinave"],["otherstories","tendance"],{Robe:1.15},"Suède",1);
 B("Monki",1,.95,"jeune",["une pièce colorée","un look jeune"],["monki"],{},"Suède");
-B("Weekday",2,1,"streetwear scandinave",["le denim scandinave","un look streetwear"],["weekday","denim"],{Jean:1.2},"Suède",1);
+B("Weekday",2,1.2,"streetwear scandinave",["le denim scandinave","un look streetwear"],["weekday","denim"],{Jean:1.2},"Suède",1);
 B("ASOS|ASOS Design",1,.85,"en ligne",["une pièce tendance","un look moderne"],["asos"],{},"Royaume-Uni",1);
 B("Boohoo",1,.5,"fast fashion",["une pièce tendance","un look rapide"],["boohoo"],{},"Royaume-Uni");
 B("PrettyLittleThing|PLT",1,.5,"fast fashion",["une pièce tendance","un look rapide"],["plt"],{},"Royaume-Uni");
-B("Urban Outfitters",2,1,"streetwear",["le style Urban Outfitters","un look vintage moderne"],["urbanoutfitters","vintage"],{},"États-Unis",1);
+B("Urban Outfitters",2,1.2,"streetwear",["le style Urban Outfitters","un look vintage moderne"],["urbanoutfitters","vintage"],{},"États-Unis",1);
 B("Abercrombie & Fitch|Abercrombie",3,.95,"casual américain",["le casual américain","une coupe moderne"],["abercrombie","americana"],{},"États-Unis",1);
 B("Hollister",2,.9,"surf californien",["l'esprit californien","un look décontracté"],["hollister","surf"],{Hoodie:1.1},"États-Unis",1);
 B("American Eagle",2,.9,"casual américain",["le casual américain","un jean confortable"],["americaneagle","denim"],{Jean:1.1},"États-Unis");
@@ -660,28 +673,28 @@ B("Tom Tailor",2,.8,"casual",["le casual allemand","un look décontracté"],["to
 B("Only|Only & Sons|Vero Moda",2,.9,"casual danois",["un basique danois","un look casual"],["only","veromoda"],{},"Danemark",1);
 B("Selected|Selected Homme|Selected Femme",3,.9,"casual chic danois",["le casual chic danois","une coupe soignée"],["selected","casualchic"],{Blazer:1.15},"Danemark",1);
 B("Samsøe Samsøe|Samsoe Samsoe",4,.9,"scandinave",["le minimalisme danois","de belles matières"],["samsoesamsoe","minimal"],{},"Danemark");
-B("Ganni",4,1.1,"scandinave tendance",["la marque danoise culte","très recherchée"],["ganni","scandi"],{Robe:1.3},"Danemark",1);
+B("Ganni",4,1.6,"scandinave tendance",["la marque danoise culte","très recherchée"],["ganni","scandi"],{Robe:1.3},"Danemark",1);
 B("Norse Projects",4,1,"minimal scandinave",["le minimalisme danois masculin","des matières soignées"],["norseprojects","minimal","menswear"],{},"Danemark");
 B("Wood Wood",4,.9,"streetwear scandinave",["le streetwear danois","une pièce de caractère"],["woodwood","streetwear"],{},"Danemark");
 // --- Sport & outdoor
-B("Lululemon",4,1.1,"yoga premium",["le vêtement de sport premium","une matière technique"],["lululemon","yoga","athleisure"],{},"Canada",1);
+B("Lululemon",4,1.3,"yoga premium",["le vêtement de sport premium","une matière technique"],["lululemon","yoga","athleisure"],{},"Canada",1);
 B("Gymshark",3,.9,"fitness",["le fitness anglais","une coupe qui sculpte"],["gymshark","fitness"],{},"Royaume-Uni",1);
-B("Asics",3,.95,"running",["la référence running","confort et technique"],["asics","running"],{Chaussures:1.3},"Japon",1);
-B("Saucony",3,1,"running rétro",["le running américain","un look rétro recherché"],["saucony","running","retro"],{Chaussures:1.3},"États-Unis");
-B("Hoka|Hoka One One",4,1,"running",["la semelle maxi iconique","très recherchée"],["hoka","running","gorpcore"],{Chaussures:1.4},"États-Unis",1);
-B("On|On Running",4,1,"running suisse",["la technologie suisse","un design reconnaissable"],["onrunning","running"],{Chaussures:1.4},"Suisse",1);
+B("Asics",3,1.3,"running",["la référence running","confort et technique"],["asics","running"],{Chaussures:1.3},"Japon",1);
+B("Saucony",3,1.2,"running rétro",["le running américain","un look rétro recherché"],["saucony","running","retro"],{Chaussures:1.3},"États-Unis");
+B("Hoka|Hoka One One",4,0.8,"running",["la semelle maxi iconique","très recherchée"],["hoka","running","gorpcore"],{Chaussures:1.4},"États-Unis",1);
+B("On|On Running",4,0.8,"running suisse",["la technologie suisse","un design reconnaissable"],["onrunning","running"],{Chaussures:1.4},"Suisse",1);
 B("Mizuno",3,.9,"running",["la technique japonaise","un confort reconnu"],["mizuno","running"],{Chaussures:1.2},"Japon");
-B("Converse",3,.9,"iconique",["la Chuck Taylor intemporelle","un classique"],["converse","sneakers"],{Chaussures:1.2},"États-Unis",1);
+B("Converse",3,1,"iconique",["la Chuck Taylor intemporelle","un classique"],["converse","sneakers"],{Chaussures:1.2},"États-Unis",1);
 B("Dr. Martens|Dr Martens|Doc Martens",4,1,"iconique",["la boot iconique","une pièce qui dure"],["drmartens","boots"],{Chaussures:1.5},"Royaume-Uni",1);
 B("Clarks",3,.9,"chaussures classiques",["la Desert Boot iconique","un confort reconnu"],["clarks","chaussures"],{Chaussures:1.3},"Royaume-Uni");
-B("Birkenstock",3,1.1,"sandales iconiques",["la sandale culte","un confort inégalé"],["birkenstock","sandales"],{Chaussures:1.4},"Allemagne",1);
+B("Birkenstock",3,1.3,"sandales iconiques",["la sandale culte","un confort inégalé"],["birkenstock","sandales"],{Chaussures:1.4},"Allemagne",1);
 B("UGG",4,1,"boots",["la boot en mouton iconique","chaude et confortable"],["ugg","boots"],{Chaussures:1.5},"États-Unis",1);
-B("Veja",4,1,"sneakers éco",["la sneaker française éco-responsable","très recherchée"],["veja","sneakers","madeinfrance"],{Chaussures:1.4},"France",1);
+B("Veja",4,0.8,"sneakers éco",["la sneaker française éco-responsable","très recherchée"],["veja","sneakers","madeinfrance"],{Chaussures:1.4},"France",1);
 B("Kickers",3,.9,"iconique",["la chaussure iconique des années 90","un confort reconnu"],["kickers","retro"],{Chaussures:1.2},"France");
 B("Geox",3,.85,"chaussures qui respirent",["la semelle qui respire","un confort reconnu"],["geox","chaussures"],{Chaussures:1.2},"Italie");
 B("Caterpillar|CAT",3,.9,"workwear",["la boot robuste","un esprit workwear"],["caterpillar","workwear"],{Chaussures:1.3},"États-Unis");
 B("K-Way|KWay",3,1,"coupe-vent iconique",["le coupe-vent iconique","léger et pratique"],["kway","outdoor"],{Veste:1.3},"France",1);
-B("Alpha Industries",4,1,"bomber iconique",["le bomber MA-1 d'origine","une pièce de caractère"],["alphaindustries","bomber","militaire"],{Veste:1.4,Doudoune:1.2},"États-Unis",1);
+B("Alpha Industries",4,0.9,"bomber iconique",["le bomber MA-1 d'origine","une pièce de caractère"],["alphaindustries","bomber","militaire"],{Veste:1.4,Doudoune:1.2},"États-Unis",1);
 B("Avirex",4,.9,"aviateur",["le blouson aviateur iconique","une pièce de collection"],["avirex","aviateur","cuir"],{Veste:1.4},"États-Unis");
 B("Peak Performance",4,.9,"ski scandinave",["le ski scandinave technique","chaud et stylé"],["peakperformance","ski"],{Doudoune:1.2,Veste:1.2},"Suède");
 B("Marmot",4,.85,"outdoor",["l'outdoor américain technique","fiable en montagne"],["marmot","outdoor"],{Veste:1.2,Doudoune:1.2},"États-Unis");
@@ -700,27 +713,27 @@ B("Lanvin",5,.9,"luxe",["la plus ancienne maison parisienne","une pièce éléga
 B("Kenzo Paris",4,1.3,"designer",["le tigre iconique","une pièce de créateur"],["kenzo","designer"],{},"France");
 B("Jil Sander",5,.9,"minimal luxe",["le minimalisme radical","une pièce intemporelle"],["jilsander","minimal"],{},"Allemagne");
 B("Dries Van Noten",5,.9,"créateur belge",["les imprimés signés Dries","une pièce de créateur"],["driesvannoten","designer"],{},"Belgique");
-B("Comme des Garçons|CDG|Comme des Garcons Play",5,.9,"avant-garde",["le petit cœur Play iconique","le streetwear japonais de créateur"],["commedesgarcons","cdg","designer"],{"T-shirt":1.4,Cardigan:1.3},"Japon",1);
+B("Comme des Garçons|CDG|Comme des Garcons Play",5,0.5,"avant-garde",["le petit cœur Play iconique","le streetwear japonais de créateur"],["commedesgarcons","cdg","designer"],{"T-shirt":1.4,Cardigan:1.3},"Japon",1);
 B("Issey Miyake|Pleats Please",5,1,"créateur japonais",["les plissés iconiques","une pièce de créateur"],["isseymiyake","designer"],{},"Japon");
 B("Yohji Yamamoto|Y-3",5,.9,"avant-garde",["l'élégance noire de Yohji","une pièce de créateur"],["yohjiyamamoto","y3","designer"],{},"Japon");
 B("Rick Owens|DRKSHDW",5,1,"avant-garde",["l'esthétique Rick Owens","une pièce très recherchée"],["rickowens","avantgarde"],{Chaussures:1.3},"États-Unis");
 B("Vivienne Westwood",5,1,"punk couture",["l'orbe iconique","le punk couture britannique"],["viviennewestwood","punk"],{Bijou:1.4,Sac:1.3},"Royaume-Uni",1);
 B("Diesel Black Gold",4,.9,"denim premium",["la ligne premium de Diesel","une pièce de caractère"],["diesel","denim"],{},"Italie");
-B("Tommy Hilfiger Collection",5,.8,"premium",["la ligne luxe de Tommy","une qualité supérieure"],["tommyhilfiger"],{},"États-Unis");
+B("Tommy Hilfiger Collection",5,0.5,"premium",["la ligne luxe de Tommy","une qualité supérieure"],["tommyhilfiger"],{},"États-Unis");
 B("Polo Ralph Lauren Purple Label|Purple Label|RRL|Double RL",5,1,"premium heritage",["le haut de gamme Ralph Lauren","une pièce de collection"],["ralphlauren","rrl"],{},"États-Unis");
 // --- Streetwear & sneakers
-B("Nike SB|Nike Dunk",4,1.1,"skate",["l'héritage skate de Nike","très recherché"],["nikesb","skate","sneakers"],{Chaussures:1.3},"États-Unis");
+B("Nike SB|Nike Dunk",4,1.3,"skate",["l'héritage skate de Nike","très recherché"],["nikesb","skate","sneakers"],{Chaussures:1.3},"États-Unis");
 B("Adidas Yeezy|Yeezy",5,.9,"hype",["la collab culte","une sneaker recherchée"],["yeezy","sneakers","hype"],{Chaussures:1.4},"États-Unis");
 B("New Balance 550|New Balance 2002R",4,1,"sneakers",["le modèle culte","très recherché"],["newbalance","sneakers"],{Chaussures:1.3},"États-Unis");
 B("Palace",4,1.2,"streetwear",["le skate londonien","une pièce hype"],["palace","streetwear","skate"],{"T-shirt":1.3,Hoodie:1.2},"Royaume-Uni",1);
 B("Corteiz|CRTZ",4,1.4,"streetwear hype",["le streetwear londonien le plus hype","très recherché"],["corteiz","streetwear","hype"],{Hoodie:1.3,"T-shirt":1.3,Jogging:1.3},"Royaume-Uni",1);
 B("Trapstar",4,1.3,"streetwear",["le streetwear londonien","très recherché"],["trapstar","streetwear"],{Hoodie:1.3,Veste:1.3},"Royaume-Uni",1);
-B("Broken Planet",4,1.1,"streetwear",["le streetwear coloré","une pièce hype"],["brokenplanet","streetwear"],{Hoodie:1.3},"Royaume-Uni");
-B("Represent",4,1.1,"streetwear premium",["le streetwear anglais premium","une coupe soignée"],["represent","streetwear"],{Hoodie:1.2},"Royaume-Uni");
+B("Broken Planet",4,1.4,"streetwear",["le streetwear coloré","une pièce hype"],["brokenplanet","streetwear"],{Hoodie:1.3},"Royaume-Uni");
+B("Represent",4,1.5,"streetwear premium",["le streetwear anglais premium","une coupe soignée"],["represent","streetwear"],{Hoodie:1.2},"Royaume-Uni");
 B("Fear of God|Essentials|FOG Essentials",4,1.2,"streetwear minimal",["le minimalisme streetwear","très recherché"],["fearofgod","essentials","streetwear"],{Hoodie:1.3,Sweat:1.3,Jogging:1.2},"États-Unis",1);
 B("Off-White Industrial",5,.6,"streetwear designer",["la ceinture industrielle iconique","une pièce signature"],["offwhite"],{},"Italie");
-B("Heron Preston",4,1,"streetwear designer",["le streetwear de créateur","une pièce forte"],["heronpreston","streetwear"],{},"Italie");
-B("Amiri",5,1,"luxe streetwear",["le denim de luxe californien","une pièce recherchée"],["amiri","luxe","denim"],{Jean:1.4},"États-Unis");
+B("Heron Preston",5,0.6,"streetwear designer",["le streetwear de créateur","une pièce forte"],["heronpreston","streetwear"],{},"Italie");
+B("Amiri",5,1.3,"luxe streetwear",["le denim de luxe californien","une pièce recherchée"],["amiri","luxe","denim"],{Jean:1.4},"États-Unis");
 B("Chrome Hearts",5,1.2,"luxe rock",["le luxe rock californien","une pièce de collection"],["chromehearts","luxe"],{Bijou:1.5},"États-Unis");
 B("Carhartt WIP Vintage",4,1,"workwear",["du workwear d'époque","une pièce de collection"],["carhartt","vintage"],{},"Allemagne");
 B("Obey",3,1,"streetwear",["le streetwear de Shepard Fairey","un look skate"],["obey","streetwear"],{},"États-Unis",1);
@@ -731,7 +744,7 @@ B("Dickies Vintage|Dickies 874",3,1.3,"workwear",["le pantalon 874 culte","un cl
 B("Wu Wear|Wu-Tang",4,1,"streetwear 90s",["l'héritage hip-hop","une pièce vintage"],["wutang","hiphop","vintage"],{},"États-Unis");
 B("Starter",3,1.1,"vintage sport",["le blouson Starter des 90s","une pièce vintage recherchée"],["starter","vintage","90s"],{Veste:1.4},"États-Unis");
 B("Mitchell & Ness",3,1.1,"vintage sport",["le maillot vintage","une pièce de collection"],["mitchellandness","vintage"],{},"États-Unis");
-B("Jordan Brand",4,1,"sportswear hype",["l'héritage de MJ","une pièce recherchée"],["jordan","streetwear"],{Chaussures:1.3},"États-Unis");
+B("Jordan Brand",4,0.8,"sportswear hype",["l'héritage de MJ","une pièce recherchée"],["jordan","streetwear"],{Chaussures:1.3},"États-Unis");
 B("Reebok Classic",3,.9,"rétro",["la Classic iconique","un look rétro"],["reebok","retro"],{Chaussures:1.2},"États-Unis");
 B("Fila Heritage",3,.85,"rétro",["le rétro italien","une pièce 90s"],["fila","retro"],{},"Italie");
 B("Diadora",3,1,"rétro italien",["le sportswear italien rétro","une sneaker recherchée"],["diadora","retro"],{Chaussures:1.2},"Italie");
@@ -741,23 +754,23 @@ B("Champion Reverse Weave",3,1.3,"vintage",["le Reverse Weave culte","une pièce
 B("Superga",3,.9,"iconique",["la toile italienne iconique","un classique de l'été"],["superga","sneakers"],{Chaussures:1.2},"Italie");
 B("Bensimon",2,1,"tennis française",["la tennis française iconique","un classique"],["bensimon","frenchstyle"],{Chaussures:1.2},"France",1);
 B("Palladium",3,.95,"boots",["la boot en toile iconique","robuste et légère"],["palladium","boots"],{Chaussures:1.3},"France");
-B("Timberland Boots",3,1.1,"boots",["la Yellow Boot iconique","une pièce qui dure"],["timberland","boots"],{Chaussures:1.4},"États-Unis");
+B("Timberland Boots",3,1.6,"boots",["la Yellow Boot iconique","une pièce qui dure"],["timberland","boots"],{Chaussures:1.4},"États-Unis");
 B("Salomon XT-6|Salomon Sportstyle",4,1.2,"gorpcore",["la sneaker gorpcore de référence","très recherchée"],["salomon","gorpcore"],{Chaussures:1.4},"France");
 B("Merrell",3,.9,"outdoor",["la chaussure de rando confortable","robuste"],["merrell","outdoor"],{Chaussures:1.2},"États-Unis");
 B("Keen",3,.9,"outdoor",["la sandale outdoor iconique","robuste"],["keen","outdoor"],{Chaussures:1.2},"États-Unis");
 B("Teva",3,.95,"sandales outdoor",["la sandale outdoor culte","confortable"],["teva","sandales"],{Chaussures:1.3},"États-Unis");
 B("Crocs",3,.9,"iconique",["la sabot culte","confort et fun"],["crocs"],{Chaussures:1.2},"États-Unis",1);
 B("Havaianas",2,.9,"tongs",["la tong brésilienne iconique","un classique de l'été"],["havaianas"],{Chaussures:1.1},"Brésil");
-B("Vans Old Skool|Vans Vault",3,1,"skate",["la Old Skool iconique","un classique"],["vans","skate"],{Chaussures:1.2},"États-Unis");
+B("Vans Old Skool|Vans Vault",3,1.2,"skate",["la Old Skool iconique","un classique"],["vans","skate"],{Chaussures:1.2},"États-Unis");
 B("Puma Suede",3,.9,"rétro",["la Suede iconique","un classique"],["puma","retro"],{Chaussures:1.2},"Allemagne");
-B("Onitsuka Tiger",4,1,"rétro japonais",["la Mexico 66 iconique","très recherchée"],["onitsukatiger","retro"],{Chaussures:1.3},"Japon");
-B("Golden Goose",5,.8,"sneakers luxe",["la sneaker usée de luxe","une pièce recherchée"],["goldengoose","luxe","sneakers"],{Chaussures:1.5},"Italie",1);
-B("Common Projects",5,.8,"minimal luxe",["la sneaker minimaliste de référence","une qualité irréprochable"],["commonprojects","minimal"],{Chaussures:1.4},"Italie");
-B("Axel Arigato",4,1,"sneakers scandinaves",["la sneaker scandinave épurée","très recherchée"],["axelarigato","sneakers"],{Chaussures:1.3},"Suède",1);
-B("Autry",4,1,"sneakers rétro",["la sneaker rétro américaine","très tendance"],["autry","sneakers"],{Chaussures:1.3},"Italie");
-B("Paraboot",5,.9,"chaussures françaises",["la Michael iconique","le savoir-faire français"],["paraboot","madeinfrance"],{Chaussures:1.5},"France");
-B("Church's",5,.9,"chaussures anglaises",["le soulier anglais de référence","une qualité irréprochable"],["churchs","british"],{Chaussures:1.5},"Royaume-Uni");
-B("J.M. Weston|JM Weston|Weston",5,1,"chaussures françaises",["le mocassin 180 iconique","le savoir-faire français"],["jmweston","madeinfrance"],{Chaussures:1.5},"France");
+B("Onitsuka Tiger",4,0.8,"rétro japonais",["la Mexico 66 iconique","très recherchée"],["onitsukatiger","retro"],{Chaussures:1.3},"Japon");
+B("Golden Goose",5,0.8,"sneakers luxe",["la sneaker usée de luxe","une pièce recherchée"],["goldengoose","luxe","sneakers"],{Chaussures:1.5},"Italie",1);
+B("Common Projects",5,0.65,"minimal luxe",["la sneaker minimaliste de référence","une qualité irréprochable"],["commonprojects","minimal"],{Chaussures:1.4},"Italie");
+B("Axel Arigato",4,1.3,"sneakers scandinaves",["la sneaker scandinave épurée","très recherchée"],["axelarigato","sneakers"],{Chaussures:1.3},"Suède",1);
+B("Autry",4,1.3,"sneakers rétro",["la sneaker rétro américaine","très tendance"],["autry","sneakers"],{Chaussures:1.3},"Italie");
+B("Paraboot",5,0.7,"chaussures françaises",["la Michael iconique","le savoir-faire français"],["paraboot","madeinfrance"],{Chaussures:1.5},"France");
+B("Church's",5,0.7,"chaussures anglaises",["le soulier anglais de référence","une qualité irréprochable"],["churchs","british"],{Chaussures:1.5},"Royaume-Uni");
+B("J.M. Weston|JM Weston|Weston",5,0.9,"chaussures françaises",["le mocassin 180 iconique","le savoir-faire français"],["jmweston","madeinfrance"],{Chaussures:1.5},"France");
 B("Repetto",4,1,"ballerines",["la ballerine iconique","le savoir-faire français"],["repetto","ballerines"],{Chaussures:1.4},"France",1);
 B("Minelli",3,.85,"chaussures françaises",["la chaussure française accessible","un bon cuir"],["minelli","chaussures"],{Chaussures:1.2},"France",1);
 B("Jonak",3,.85,"chaussures françaises",["la chaussure parisienne","un bon rapport qualité"],["jonak","chaussures"],{Chaussures:1.2},"France",1);
@@ -772,9 +785,9 @@ B("Hunter",3,1,"bottes de pluie",["la botte de pluie iconique","une pièce qui d
 B("Sorel",4,1,"boots hiver",["la boot d'hiver de référence","chaude et robuste"],["sorel","boots"],{Chaussures:1.3},"Canada");
 B("Moon Boot",4,1,"après-ski",["la Moon Boot iconique","une pièce fun"],["moonboot","apresski"],{Chaussures:1.3},"Italie");
 // --- Enfant & bébé
-B("Jacadi",4,.9,"enfant chic",["le chic enfant parisien","une qualité soignée"],["jacadi","enfant"],{},"France",1);
-B("Bonpoint",5,.9,"enfant luxe",["le luxe enfant parisien","une pièce d'exception"],["bonpoint","enfant","luxe"],{},"France");
-B("Tartine et Chocolat",4,.85,"enfant chic",["le chic enfant français","une pièce douce"],["tartineetchocolat","enfant"],{},"France");
+B("Jacadi",4,0.35,"enfant chic",["le chic enfant parisien","une qualité soignée"],["jacadi","enfant"],{},"France",1);
+B("Bonpoint",5,0.45,"enfant luxe",["le luxe enfant parisien","une pièce d'exception"],["bonpoint","enfant","luxe"],{},"France");
+B("Tartine et Chocolat",4,0.35,"enfant chic",["le chic enfant français","une pièce douce"],["tartineetchocolat","enfant"],{},"France");
 B("Catimini",3,.9,"enfant coloré",["les imprimés colorés","une pièce enfant de qualité"],["catimini","enfant"],{},"France",1);
 B("Okaïdi|Okaidi|Obaïbi",2,.9,"enfant",["un basique enfant solide","une pièce du quotidien"],["okaidi","enfant"],{},"France",1);
 B("Sergent Major",2,.85,"enfant",["une pièce enfant soignée","un style français"],["sergentmajor","enfant"],{},"France",1);
@@ -788,11 +801,11 @@ B("Cyrillus",3,.9,"enfant classique",["le classique chic français","une qualit�
 B("Petit Bateau Bébé",3,1.05,"bébé",["la marque bébé iconique","une douceur reconnue"],["petitbateau","bebe"],{},"France");
 B("Absorba",2,.85,"bébé",["le bébé à la française","une pièce douce"],["absorba","bebe"],{},"France");
 B("Noukie's|Noukies",2,.85,"bébé",["le doudou et la layette","une pièce douce"],["noukies","bebe"],{},"Belgique");
-B("Bobo Choses",4,1,"enfant créateur",["les imprimés ludiques","une marque enfant recherchée"],["bobochoses","enfant"],{},"Espagne",1);
-B("Mini Rodini",4,1,"enfant créateur",["le design suédois ludique","une marque enfant recherchée"],["minirodini","enfant"],{},"Suède");
-B("Tinycottons",4,.95,"enfant créateur",["le design enfant barcelonais","une pièce recherchée"],["tinycottons","enfant"],{},"Espagne");
-B("Louise Misha",4,.9,"enfant bohème",["le bohème enfant","une pièce féminine"],["louisemisha","enfant"],{},"France");
-B("Émile et Ida|Emile et Ida",4,.9,"enfant",["le style enfant français","de belles matières"],["emileetida","enfant"],{},"France");
+B("Bobo Choses",4,0.55,"enfant créateur",["les imprimés ludiques","une marque enfant recherchée"],["bobochoses","enfant"],{},"Espagne",1);
+B("Mini Rodini",4,0.5,"enfant créateur",["le design suédois ludique","une marque enfant recherchée"],["minirodini","enfant"],{},"Suède");
+B("Tinycottons",4,0.5,"enfant créateur",["le design enfant barcelonais","une pièce recherchée"],["tinycottons","enfant"],{},"Espagne");
+B("Louise Misha",4,0.45,"enfant bohème",["le bohème enfant","une pièce féminine"],["louisemisha","enfant"],{},"France");
+B("Émile et Ida|Emile et Ida",4,0.45,"enfant",["le style enfant français","de belles matières"],["emileetida","enfant"],{},"France");
 B("Nike Kids|Adidas Kids",2,1,"sport enfant",["le sport enfant","pratique"],["sportenfant"],{},"");
 // --- Lingerie, sport & bien-être
 B("Victoria's Secret|Victoria Secret",3,.8,"lingerie",["la lingerie américaine iconique","une pièce glamour"],["victoriassecret","lingerie"],{},"États-Unis",1);
@@ -813,53 +826,53 @@ B("Arena",2,.9,"natation",["la natation technique","un maillot robuste"],["arena
 B("Roxy",3,.85,"surf femme",["l'esprit surf féminin","un look décontracté"],["roxy","surf"],{"Maillot de bain":1.2},"États-Unis",1);
 B("O'Neill|ONeill",3,.85,"surf",["le surfwear d'origine","un look décontracté"],["oneill","surf"],{"Maillot de bain":1.1},"États-Unis");
 B("Seafolly",4,.9,"maillots australiens",["le maillot australien","une coupe flatteuse"],["seafolly","swim"],{"Maillot de bain":1.3},"Australie");
-B("Eres",5,1,"maillots luxe",["le maillot de luxe parisien","une coupe parfaite"],["eres","luxe","swim"],{"Maillot de bain":1.5},"France");
+B("Eres",5,0.7,"maillots luxe",["le maillot de luxe parisien","une coupe parfaite"],["eres","luxe","swim"],{"Maillot de bain":1.5},"France");
 B("Adidas Performance|Adidas Climalite",3,1,"sport",["le sport technique","confortable"],["adidas","sport"],{},"Allemagne");
 B("Nike Pro|Nike Dri-FIT",3,1,"sport",["le sport technique","confortable"],["nike","sport"],{},"États-Unis");
-B("Alo Yoga|Alo",4,1,"yoga premium",["le yoga californien premium","très recherché"],["aloyoga","yoga","athleisure"],{Legging:1.3},"États-Unis",1);
-B("Sweaty Betty",4,.9,"sport femme",["le sport féminin premium","une matière technique"],["sweatybetty","athleisure"],{},"Royaume-Uni");
+B("Alo Yoga|Alo",4,1.4,"yoga premium",["le yoga californien premium","très recherché"],["aloyoga","yoga","athleisure"],{Legging:1.3},"États-Unis",1);
+B("Sweaty Betty",4,1.1,"sport femme",["le sport féminin premium","une matière technique"],["sweatybetty","athleisure"],{},"Royaume-Uni");
 B("Castore",3,.9,"sport premium",["le sport premium britannique","technique"],["castore","sport"],{},"Royaume-Uni");
-B("Rapha",4,1,"cyclisme premium",["le cyclisme premium","une matière technique"],["rapha","cyclisme"],{},"Royaume-Uni");
+B("Rapha",4,1.5,"cyclisme premium",["le cyclisme premium","une matière technique"],["rapha","cyclisme"],{},"Royaume-Uni");
 B("Patagonia Vintage",4,1.2,"outdoor vintage",["la polaire Synchilla d'époque","une pièce de collection"],["patagonia","vintage"],{Veste:1.3,"Gilet / Zip":1.4},"États-Unis");
 // --- Montres, bijoux, lunettes
-B("Swatch",3,1,"montres suisses",["la Swatch iconique","une pièce fun"],["swatch","montre"],{Montre:1.2},"Suisse",1);
+B("Swatch",3,0.8,"montres suisses",["la Swatch iconique","une pièce fun"],["swatch","montre"],{Montre:1.2},"Suisse",1);
 B("Casio|G-Shock",3,1,"montres",["la Casio iconique","robuste et rétro"],["casio","gshock","montre"],{Montre:1.3},"Japon",1);
 B("Seiko",4,1,"montres japonaises",["l'horlogerie japonaise","une qualité reconnue"],["seiko","montre"],{Montre:1.4},"Japon",1);
-B("Citizen",4,.9,"montres japonaises",["l'Eco-Drive iconique","une montre fiable"],["citizen","montre"],{Montre:1.3},"Japon");
-B("Tissot",4,1,"montres suisses",["l'horlogerie suisse accessible","une qualité reconnue"],["tissot","montre"],{Montre:1.5},"Suisse",1);
+B("Citizen",4,0.8,"montres japonaises",["l'Eco-Drive iconique","une montre fiable"],["citizen","montre"],{Montre:1.3},"Japon");
+B("Tissot",4,1.2,"montres suisses",["l'horlogerie suisse accessible","une qualité reconnue"],["tissot","montre"],{Montre:1.5},"Suisse",1);
 B("Fossil",3,.85,"montres",["la montre américaine casual","un look vintage"],["fossil","montre"],{Montre:1.2},"États-Unis",1);
 B("Daniel Wellington",3,.7,"montres minimalistes",["la montre minimaliste","un look épuré"],["danielwellington","montre"],{Montre:1.1},"Suède",1);
 B("Cluse",3,.75,"montres minimalistes",["la montre fine et épurée","un look féminin"],["cluse","montre"],{Montre:1.1},"Pays-Bas");
-B("Michael Kors Montres",4,1,"montres",["la montre MK dorée","une pièce reconnaissable"],["michaelkors","montre"],{Montre:1.3},"États-Unis");
+B("Michael Kors Montres",4,1.2,"montres",["la montre MK dorée","une pièce reconnaissable"],["michaelkors","montre"],{Montre:1.3},"États-Unis");
 B("Guess Montres",3,.8,"montres",["la montre Guess bling","une pièce reconnaissable"],["guess","montre"],{Montre:1.2},"États-Unis");
 B("Festina",3,.8,"montres",["la montre espagnole classique","un bon rapport qualité"],["festina","montre"],{Montre:1.2},"Espagne");
 B("Lip",3,.9,"montres françaises",["l'horlogerie française","une pièce de caractère"],["lip","montre","madeinfrance"],{Montre:1.3},"France");
-B("Pandora",3,.9,"bijoux",["le bracelet à charms iconique","un bijou reconnaissable"],["pandora","bijoux"],{Bijou:1.3},"Danemark",1);
+B("Pandora",3,0.7,"bijoux",["le bracelet à charms iconique","un bijou reconnaissable"],["pandora","bijoux"],{Bijou:1.3},"Danemark",1);
 B("Swarovski",3,.9,"bijoux cristal",["le cristal autrichien","un bijou brillant"],["swarovski","bijoux"],{Bijou:1.3},"Autriche",1);
 B("Agatha",3,.85,"bijoux",["le scottie iconique","un bijou parisien"],["agatha","bijoux"],{Bijou:1.2},"France");
 B("Les Néréides|Les Nereides",3,.9,"bijoux fantaisie",["le bijou fantaisie parisien","une pièce poétique"],["lesnereides","bijoux"],{Bijou:1.2},"France");
-B("Gas Bijoux",4,.9,"bijoux",["le bijou marseillais","une pièce solaire"],["gasbijoux","bijoux"],{Bijou:1.3},"France");
-B("Ray-Ban|Rayban",4,1,"lunettes iconiques",["la Wayfarer et l'Aviator","une icône"],["rayban","lunettes"],{Lunettes:1.4},"Italie",1);
-B("Oakley",4,.9,"lunettes sport",["la technique sport","un look Y2K recherché"],["oakley","lunettes","y2k"],{Lunettes:1.3},"États-Unis",1);
-B("Persol",5,.9,"lunettes italiennes",["la lunette italienne artisanale","une qualité irréprochable"],["persol","lunettes"],{Lunettes:1.5},"Italie");
+B("Gas Bijoux",4,1.5,"bijoux",["le bijou marseillais","une pièce solaire"],["gasbijoux","bijoux"],{Bijou:1.3},"France");
+B("Ray-Ban|Rayban",4,1.2,"lunettes iconiques",["la Wayfarer et l'Aviator","une icône"],["rayban","lunettes"],{Lunettes:1.4},"Italie",1);
+B("Oakley",4,1,"lunettes sport",["la technique sport","un look Y2K recherché"],["oakley","lunettes","y2k"],{Lunettes:1.3},"États-Unis",1);
+B("Persol",5,0.7,"lunettes italiennes",["la lunette italienne artisanale","une qualité irréprochable"],["persol","lunettes"],{Lunettes:1.5},"Italie");
 B("Izipizi",3,.9,"lunettes",["la lunette parisienne colorée","un bon rapport qualité"],["izipizi","lunettes"],{Lunettes:1.1},"France",1);
 B("Jimmy Fairly",3,.9,"lunettes",["la lunette parisienne tendance","un look moderne"],["jimmyfairly","lunettes"],{Lunettes:1.2},"France");
 // --- Sacs & accessoires
-B("Eastpak",3,1,"sacs à dos",["le sac à dos iconique","garanti 30 ans"],["eastpak","sac"],{Sac:1.3},"États-Unis",1);
-B("Herschel",3,.9,"sacs à dos",["le sac à dos canadien","un look rétro"],["herschel","sac"],{Sac:1.2},"Canada",1);
-B("Fjällräven Kånken|Kanken",4,1,"sacs à dos",["le Kånken iconique","une pièce recherchée"],["fjallraven","kanken","sac"],{Sac:1.4},"Suède",1);
+B("Eastpak",3,0.7,"sacs à dos",["le sac à dos iconique","garanti 30 ans"],["eastpak","sac"],{Sac:1.3},"États-Unis",1);
+B("Herschel",3,0.8,"sacs à dos",["le sac à dos canadien","un look rétro"],["herschel","sac"],{Sac:1.2},"Canada",1);
+B("Fjällräven Kånken|Kanken",4,0.8,"sacs à dos",["le Kånken iconique","une pièce recherchée"],["fjallraven","kanken","sac"],{Sac:1.4},"Suède",1);
 B("Sandqvist",4,.9,"sacs scandinaves",["le sac scandinave épuré","des matières durables"],["sandqvist","sac"],{Sac:1.2},"Suède");
-B("Polène|Polene",4,1.2,"maroquinerie parisienne",["la maroquinerie parisienne tendance","très recherchée"],["polene","maroquinerie"],{Sac:1.5},"France",1);
+B("Polène|Polene",4,3,"maroquinerie parisienne",["la maroquinerie parisienne tendance","très recherchée"],["polene","maroquinerie"],{Sac:1.5},"France",1);
 B("Sézane Maroquinerie",4,1,"maroquinerie",["le sac Sézane","très recherché"],["sezane","maroquinerie"],{Sac:1.4},"France");
 B("Le Tanneur",4,.9,"maroquinerie française",["la maroquinerie française depuis 1898","un cuir de qualité"],["letanneur","maroquinerie"],{Sac:1.3},"France");
 B("Mac Douglas",3,.85,"maroquinerie",["le cuir français","un sac classique"],["macdouglas","maroquinerie"],{Sac:1.2},"France");
 B("Lollipops",2,.8,"sacs fantaisie",["le sac fantaisie parisien","une pièce colorée"],["lollipops","sac"],{Sac:1.1},"France");
 B("Desigual Sacs",2,.85,"sacs colorés",["le sac coloré","une pièce unique"],["desigual","sac"],{Sac:1.1},"Espagne");
 B("Fossil Sacs",3,.85,"maroquinerie",["le cuir américain casual","un sac vintage"],["fossil","sac"],{Sac:1.2},"États-Unis");
-B("Kipling",3,.85,"sacs",["le singe iconique","un sac léger et pratique"],["kipling","sac"],{Sac:1.2},"Belgique",1);
+B("Kipling",3,0.7,"sacs",["le singe iconique","un sac léger et pratique"],["kipling","sac"],{Sac:1.2},"Belgique",1);
 B("Samsonite",3,.9,"bagagerie",["la bagagerie de référence","robuste"],["samsonite","bagage"],{Sac:1.2},"États-Unis");
 B("Delsey",3,.85,"bagagerie française",["la bagagerie française","robuste"],["delsey","bagage"],{Sac:1.2},"France");
-B("Stetson",4,.9,"chapeaux",["le chapeau de référence","une pièce de caractère"],["stetson","chapeau"],{"Bonnet / Casquette":1.4},"États-Unis");
+B("Stetson",4,1.5,"chapeaux",["le chapeau de référence","une pièce de caractère"],["stetson","chapeau"],{"Bonnet / Casquette":1.4},"États-Unis");
 B("New Era",3,1,"casquettes",["la 59FIFTY iconique","un classique streetwear"],["newera","casquette"],{"Bonnet / Casquette":1.3},"États-Unis",1);
 B("'47 Brand|47 Brand",2,.9,"casquettes",["la casquette sport US","un look rétro"],["47brand","casquette"],{"Bonnet / Casquette":1.1},"États-Unis");
 B("Buff",2,.9,"tour de cou",["le tour de cou iconique","pratique"],["buff","outdoor"],{},"Espagne");
@@ -903,13 +916,13 @@ B("Hackett Aston Martin",4,.95,"british chic",["la collab Aston Martin","une pi�
 B("OVS",1,.7,"basiques italiens",["un basique italien","une pièce du quotidien"],["ovs"],{},"Italie");
 B("Terranova",1,.7,"jeune italien",["une pièce tendance","un look jeune"],["terranova"],{},"Italie");
 B("Subdued",2,.9,"jeune italien",["le style italien jeune","une pièce tendance"],["subdued"],{},"Italie");
-B("Brandy Melville",2,1,"jeune",["la marque culte des ados","taille unique"],["brandymelville"],{},"Italie",1);
+B("Brandy Melville",2,1.5,"jeune",["la marque culte des ados","taille unique"],["brandymelville"],{},"Italie",1);
 B("Motivi",2,.8,"féminin italien",["le féminin italien","une pièce habillée"],["motivi"],{},"Italie");
 B("Marella",4,.8,"chic italien",["la ligne de Max Mara","une élégance sobre"],["marella","chic"],{Manteau:1.2},"Italie");
 B("Marina Rinaldi",4,.8,"chic grande taille",["l'élégance italienne grande taille","de belles matières"],["marinarinaldi","grandetaille"],{},"Italie");
 B("Luisa Spagnoli",4,.8,"chic italien",["le chic italien classique","une belle maille"],["luisaspagnoli","chic"],{},"Italie");
-B("Fay",5,.8,"chic italien",["la veste à crochets iconique","le chic italien"],["fay","chic"],{Veste:1.3},"Italie");
-B("Herno",5,1,"doudounes luxe",["la doudoune de luxe italienne","une qualité d'exception"],["herno","luxe"],{Doudoune:1.4},"Italie");
+B("Fay",5,0.6,"chic italien",["la veste à crochets iconique","le chic italien"],["fay","chic"],{Veste:1.3},"Italie");
+B("Herno",5,0.9,"doudounes luxe",["la doudoune de luxe italienne","une qualité d'exception"],["herno","luxe"],{Doudoune:1.4},"Italie");
 B("Peuterey",4,1,"doudounes italiennes",["la doudoune italienne technique","chaude et élégante"],["peuterey","doudoune"],{Doudoune:1.3},"Italie");
 B("Colmar",4,.95,"doudounes ski",["la doudoune de ski italienne","chaude et stylée"],["colmar","ski"],{Doudoune:1.3},"Italie");
 B("Save the Duck",3,1,"doudounes vegan",["la doudoune sans plume","légère et éthique"],["savetheduck","doudoune"],{Doudoune:1.3},"Italie",1);
@@ -981,19 +994,20 @@ const SIZE_M={XXS:.85,XS:.9,S:.98,M:1.05,L:1.05,XL:1,XXL:.92,"3XL":.85,"4XL":.8,
 const MAT_M={"Cachemire":1.45,"Mohair":1.2,"Alpaga":1.25,"Angora":1.15,"Laine mérinos":1.2,"Laine":1.1,"Soie":1.3,"Cuir":1.45,"Daim":1.3,"Gore-Tex":1.3,"Tweed":1.15,"Lin":1.05,"Coton bio":1.03,"Lyocell / Tencel":1.05,"Modal":1.03,"Velours côtelé":1.05,"Satin":1.05,"Dentelle":1.05,"Fausse fourrure":1.05,"Cuir synthétique":.9,"Polyester":.95,"Acrylique":.85,"Coton / polyester":.97};
 const DET_M={"Vintage":1.1,"Grand logo":1.08,"Made in Europe":1.08,"Made in France":1.1,"Édition limitée":1.2,"Neuf jamais porté":1.1,"Épais et chaud":1.04,"Col camionneur":1.05,"Oversize":1.03,"Capuche":1.02,"Zippé":1.02,"Doublé":1.03,"Imperméable":1.05,"Col V":.98,"Sans manches":.95};
 function seasonFactor(type){ const t=TYPES[type]; if(!t) return 1; const m=new Date().getMonth()+1; const cold=m>=10||m<=2, shoulder=m===3||m===9, hot=m>=5&&m<=7;
-  if(t.warm) return cold?1.1:shoulder?1.03:hot?.85:.95; return hot?1.08:cold?.9:1 }
+  const summer={"T-shirt":1,"Short":1,"Maillot de bain":1,"Débardeur":1,"Top":1,"Robe":1,"Jupe":1,"Combinaison":1}[type];
+  if(t.warm) return cold?1.1:shoulder?1.03:hot?.85:.95; if(summer) return hot?1.08:cold?.9:1; return 1 }
 function nice(v){ v=Math.max(2,v); if(v<15) return Math.round(v); if(v<40) return Math.round(v); return Math.round(v/5)*5 }
 function estimate(a){
   const type=TYPES[a.type]?a.type:"Autre", br=brandOf(a.marque), custom=!!(a.marque&&!br);
   const F=[]; // facteurs expliqués
-  let p=REF[type];
-  F.push({k:"Catégorie",v:a.type||"non renseignée",m:null,base:p});
-  const tm=br?TIER_MULT[br.tier]*br.adj:custom?TIER_MULT[2]*.8:TIER_MULT[2]*.6;
-  p*=tm; F.push({k:br?`${br.name} · ${TIER_LABEL[br.tier]}`:custom?`${a.marque} · marque hors catalogue`:"Marque non renseignée",m:tm});
+  const tier=br?br.tier:2, retail=br?retailOf(br,type):TIER_RP[2]*(custom?.8:.6)*(TYPE_RF[type]||.8);
+  F.push({k:`${br?`${br.name} · ${TIER_LABEL[br.tier]}`:custom?`${a.marque} · marque hors catalogue`:"Marque non renseignée"} · ${a.type||"catégorie ?"} neuf ≈`,m:null,base:retail});
+  const ret=RET[tier]; let p=retail*ret;
+  F.push({k:`Cote seconde main ${TIER_LABEL[tier].toLowerCase()} (très bon état)`,m:null,base:p});
   if(br&&br.hot[type]){p*=br.hot[type];F.push({k:`${br.name} très recherché en ${type.toLowerCase()}`,m:br.hot[type]})}
   const c=COND[a.etat]||1; if(a.etat){p*=c;F.push({k:"État : "+a.etat.toLowerCase(),m:c})}
   const sz=SIZE_M[a.taille]; if(sz&&sz!==1){p*=sz;F.push({k:"Taille "+a.taille+(sz>1?" (très demandée)":" (moins demandée)"),m:sz})}
-  const mm=MAT_M[a.matiere]; if(mm&&mm!==1){p*=mm;F.push({k:"Matière : "+a.matiere.toLowerCase(),m:mm})}
+  const NO_MAT={"Chaussures":1,"Sac":1,"Portefeuille":1,"Ceinture":1}; const mm=NO_MAT[type]?1:MAT_M[a.matiere]; if(mm&&mm!==1){p*=mm;F.push({k:"Matière : "+a.matiere.toLowerCase(),m:mm})}
   (a.details||[]).forEach(d=>{const x=DET_M[d];if(x&&x!==1){p*=x;F.push({k:d,m:x})}});
   const sf=seasonFactor(type); if(Math.abs(sf-1)>.01){p*=sf;F.push({k:sf>1?"Pleine saison":"Hors saison",m:sf})}
   if((a.defauts||"").trim()){p*=.88;F.push({k:"Défaut signalé",m:.88})}
@@ -1011,16 +1025,16 @@ function estimate(a){
   let fair=p;
   if(own&&ownN){const w=ownN/(ownN+2);fair=fair*(1-w)+own*w;F.push({k:`Moyenne de tes ${ownN} vente(s) ${a.type} ${brandName(a.marque)} : ${fmtE0(own)}`,m:null,note:true})}
   const cost=artCost(a);
-  const mid=nice(fair); let list=nice(fair*1.15), quick=nice(fair*.85); if(list<=mid) list=mid+1; if(quick>=mid&&mid>3) quick=mid-1;
+  const mid=nice(fair); let list=nice(fair*1.15), quick=nice(fair*.8); const high=nice(fair*1.3); if(list<=mid) list=mid+1; if(quick>=mid&&mid>3) quick=mid-1;
   let floor=nice(Math.max(fair*.7, cost>0?cost*1.3+1:0)); if(floor>quick) floor=quick;
   let conf=0; if(br)conf+=br.custom?1.2:2; else if(custom)conf+=0; if(a.type)conf+=1; if(a.etat)conf+=1; if(a.taille)conf+=1; if(a.matiere)conf+=.5; if(ownN)conf+=1.5;
   const confL=conf>=5.5?"haute":conf>=3.5?"moyenne":"faible";
   const margin=cost>0?mid-cost:null, mult=cost>0?mid/cost:null;
-  return {list,mid,quick,floor,fair,F,own,ownN,conf:confL,known:!!br,custom,cost,margin,mult,brand:br};
+  return {list,mid,quick,high,floor,fair,F,own,ownN,conf:confL,known:!!br,custom,cost,margin,mult,brand:br,retail};
 }
 function estimateRaw(a){ // estimation sans recalage ni historique (pour la calibration)
-  const type=TYPES[a.type]?a.type:"Autre", br=brandOf(a.marque); let p=REF[type]*(br?TIER_MULT[br.tier]*br.adj:TIER_MULT[2]*.8);
-  if(br&&br.hot[type])p*=br.hot[type]; p*=COND[a.etat]||1; p*=SIZE_M[a.taille]||1; p*=MAT_M[a.matiere]||1; (a.details||[]).forEach(d=>{p*=DET_M[d]||1}); return p }
+  const type=TYPES[a.type]?a.type:"Autre", br=brandOf(a.marque); let p=(br?retailOf(br,type):TIER_RP[2]*.8*(TYPE_RF[type]||.8))*RET[br?br.tier:2];
+  if(br&&br.hot[type])p*=br.hot[type]; p*=COND[a.etat]||1; p*=SIZE_M[a.taille]||1; if(!{"Chaussures":1,"Sac":1,"Portefeuille":1,"Ceinture":1}[type]) p*=MAT_M[a.matiere]||1; (a.details||[]).forEach(d=>{p*=DET_M[d]||1}); return p }
 function suggestPrice(a){ const e=estimate(a); return {lo:e.quick,mid:e.mid,hi:e.list,known:e.known,own:e.own,ownN:e.ownN,e} }
 
 /* ================= state ================= */
@@ -1704,15 +1718,16 @@ function sugHTML(p){
     <div class="pc-head"><span class="lbl">Prix conseillé</span><span class="hint">fiabilité ${e.conf} <span class="mono">${conf}</span></span></div>
     <div class="pc-row">
       <button type="button" class="pc-opt" data-act="use-sug" data-v="${e.list}"><small>Afficher à</small><b>${fmtE0(e.list)}</b><small>marge de négo</small></button>
-      <button type="button" class="pc-opt main" data-act="use-sug" data-v="${e.mid}"><small>Juste prix</small><b>${fmtE0(e.mid)}</b><small>vente en ~3 sem.</small></button>
-      <button type="button" class="pc-opt" data-act="use-sug" data-v="${e.quick}"><small>Vente rapide</small><b>${fmtE0(e.quick)}</b><small>plancher ${fmtE0(e.floor)}</small></button>
+      <button type="button" class="pc-opt main" data-act="use-sug" data-v="${e.mid}"><small>Juste prix</small><b>${fmtE0(e.mid)}</b><small>part en 1-3 sem.</small></button>
+      <button type="button" class="pc-opt" data-act="use-sug" data-v="${e.quick}"><small>Vente rapide</small><b>${fmtE0(e.quick)}</b><small>en quelques jours</small></button>
     </div>
     ${e.cost>0?`<div class="hint" style="margin-top:8px">Coût ${fmtE(e.cost)} → au juste prix : <b class="${sgn(e.margin)}">${fmtSigned(e.margin)}</b> de bénéfice (x${fmtN(e.mult)}).${e.floor<=e.cost*1.3+1?" Ne descends pas sous le plancher.":""}</div>`:""}
+    <div class="hint" style="margin-top:6px">Patient ? Jusqu'à <b>${fmtE0(e.high)}</b> si tu peux attendre. Plancher absolu : <b>${fmtE0(e.floor)}</b>.</div>
     ${!e.known&&!e.custom?`<div class="hint" style="margin-top:6px">Choisis la marque pour une estimation fiable.</div>`:""}
     <details class="pc-why"><summary>Pourquoi ce prix ?</summary>
       <div class="pc-f">${e.F.map(f=>f.note?`<div class="row note"><span>${esc(f.k)}</span></div>`:`<div class="row"><span>${esc(f.k)}</span>${f.base!=null?`<b>${fmtE0(f.base)}</b>`:pm(f.m)}</div>`).join("")}
       <div class="row total"><span>Estimation</span><b>${fmtE0(e.fair)}</b></div></div>
-      <p class="hint" style="margin:8px 0 0">Prix de référence Vinted homme, ajustés par marque, état, taille, matière, saison et tes propres ventes. Vérifie toujours avec les annonces vendues pour les pièces à plus de 40 €.</p></details>
+      <p class="hint" style="margin:8px 0 0">On part du prix neuf de la marque, on applique la cote seconde main Vinted de sa gamme, puis l'état, la taille, la matière, la saison et tes propres ventes. Pour les pièces à plus de 40 €, confirme avec le filtre « vendus » de Vinted.</p></details>
   </div>`;
 }
 /* ---------- Sélecteur de marque ---------- */
