@@ -1852,7 +1852,7 @@ function openStudio(art){ ST.art=art||{}; ST.img=null; ST.items=[]; ST.cur=0; Ob
 function closeStudio(){ const el=$("#studio"); if(el.hidden) return; popLayer("studio"); el.classList.remove("on"); setTimeout(()=>{el.hidden=true;$("#studioBody").innerHTML=""},200); ST.img=null; ST.items=[] }
 function stLoad(src){ return new Promise(res=>{ const im=new Image(); im.onload=()=>{ST.img=im;res()}; im.onerror=()=>res(); im.src=src }) }
 function studioHTML(){ const a=ST.art, m=brandName(a.marque), prix=num(a.prixAffiche)>0?Math.round(num(a.prixAffiche))+" €":"";
-  const badges=[["","Aucun"],["complet","Complet"],["marque",m||"Marque"],["prix",prix||"Prix"],["neuf","NEUF"],["lot","-% lot"]];
+  const badges=[["","Aucun"],["complet","Complet"],["marque",m||"Marque"],["neuf","NEUF"],["lot","-% lot"]];
   const strip=ST.items.length?`<div class="st-strip">${ST.items.map((it,i)=>`<button type="button" class="st-th ${i===ST.cur?"on":""}" data-act="st-sel" data-i="${i}"><img src="${it.img.src}" alt=""><i>${i+1}</i></button>`).join("")}<label class="st-th add" for="stFile">+</label></div>`:"";
   return `${strip}
    <div class="st-wrap ${ST.ratio==="45"?"r45":""}" id="stWrap"><canvas id="stCanvas" width="900" height="${ST.ratio==="45"?1125:900}"></canvas>${ST.img?"":`<div style="position:absolute;inset:0;display:grid;place-items:center;color:#aaa;font-size:14px;text-align:center;padding:20px">Choisis une photo pour commencer<br><small>(la photo d'origine, pas une capture)</small></div>`}</div>
@@ -1865,7 +1865,7 @@ function studioHTML(){ const a=ST.art, m=brandName(a.marque), prix=num(a.prixAff
    <div class="st-row"><span>Chaleur</span><input type="range" data-k="warm" min="-30" max="30" value="${ST.warm}"><span class="mono">${ST.warm}</span></div>
    <div class="st-row"><span>Couleurs</span><input type="range" data-k="sat" min="-40" max="50" value="${ST.sat}"><span class="mono">${ST.sat}</span></div>
    <div class="fg" style="margin-top:8px"><span class="lbl">Badge sur la photo</span><div class="opt" data-opt="badge">${badges.map(([v,l])=>`<button type="button" data-v="${esc(v)}" class="${ST.badge===v?"on":""}" data-act="st-badge" ${!v&&ST.badge===""?"":""}>${esc(l)}</button>`).join("")}</div>
-   <span class="hint">« Complet » = marque, taille, état et prix dans un coin : les 4 infos qui font cliquer. Sur la photo 1 seulement, les suivantes restent nues (Vinted veut des photos fidèles).</span></div>
+   <span class="hint">« Complet » = marque, taille et état dans un coin. Jamais le prix : il change avec les négos et les baisses. Sur la photo 1 seulement, les suivantes restent nues (Vinted veut des photos fidèles).</span></div>
    ${ST.items.length>1?`<div class="btns" style="margin-top:8px"><button type="button" class="btn sm" data-act="st-apply-all">Appliquer la lumière à toutes</button></div>`:""}
    <div class="st-grid"><button type="button" class="btn pri" data-act="st-share" ${ST.img?"":"disabled"}>⬇︎ ${ST.items.length>1?"Enregistrer les "+ST.items.length+" photos":"Enregistrer / partager"}</button><button type="button" class="btn" data-act="st-use" ${ST.img?"":"disabled"}>Photo ${ST.cur+1} pour la fiche</button></div>`}
 function stDrawSoon(){ cancelAnimationFrame(ST.raf); ST.raf=requestAnimationFrame(()=>stRender($("#stCanvas"),900)) }
@@ -1879,11 +1879,10 @@ function stRender(cv,size,final){ if(!cv) return; const im=ST.img; const W=size,
   for(let i=0;i<n;i+=4){ let r=lut[d[i]],gg=lut[d[i+1]],b=lut[d[i+2]]; if(sat!==1){const l=(r*299+gg*587+b*114)/1000; r=l+(r-l)*sat; gg=l+(gg-l)*sat; b=l+(b-l)*sat} d[i]=r+wr; d[i+1]=gg; d[i+2]=b+wb }
   g.putImageData(id,0,0);
   if(ST.badge) stBadge(g,W,H) }
-function stBadge(g,W,H){ const a=ST.art||{}, m=brandName(a.marque)||"", prix=num(a.prixAffiche)>0?Math.round(num(a.prixAffiche))+" €":"", etat=a.etat||"", neuf=/^Neuf/.test(etat);
+function stBadge(g,W,H){ const a=ST.art||{}, m=brandName(a.marque)||"", etat=a.etat||"", neuf=/^Neuf/.test(etat);
   const F="Bricolage Grotesque, Figtree, system-ui, sans-serif"; const pill=(txt,x,y,fs,bg,fg,weight=800)=>{ g.font=`${weight} ${fs}px ${F}`; const pad=fs*.7, tw=g.measureText(txt).width, bw=tw+pad*2, bh=fs*1.9; g.fillStyle=bg; g.beginPath(); g.roundRect(x,y,bw,bh,bh/2); g.fill(); g.fillStyle=fg; g.textBaseline="middle"; g.fillText(txt,x+pad,y+bh/2+fs*.05); return {w:bw,h:bh} };
   const mx=W*.04, fs=Math.round(W*.045), dark="rgba(20,22,24,.9)", acc="#0f766e";
   if(ST.badge==="marque"){ if(m) pill(m,mx,H-fs*1.9-mx,fs,dark,"#fff"); return }
-  if(ST.badge==="prix"){ if(prix) pill(prix,mx,H-fs*1.9-mx,fs,acc,"#fff"); return }
   if(ST.badge==="neuf"){ pill(neuf?"NEUF":"COMME NEUF",mx,H-fs*1.9-mx,fs,acc,"#fff"); return }
   if(ST.badge==="lot"){ pill(`-${db.settings.remiseLot||10} % DÈS 2 ARTICLES`,mx,H-fs*1.9-mx,fs,acc,"#fff"); return }
   // complet : carte 4 infos
@@ -1892,7 +1891,7 @@ function stBadge(g,W,H){ const a=ST.art||{}, m=brandName(a.marque)||"", prix=num
   const cw=Math.max(w1,w2)+pad*2, ch=(l1?f1*1.25:0)+(l2?f2*1.5:0)+pad*1.6, cx=mx, cy=H-ch-mx;
   g.fillStyle="rgba(255,255,255,.94)"; g.beginPath(); g.roundRect(cx,cy,cw,ch,W*.025); g.fill(); g.strokeStyle="rgba(0,0,0,.08)"; g.lineWidth=2; g.stroke();
   let y=cy+pad*.9; g.textBaseline="top"; g.fillStyle="#141618"; if(l1){ g.font=`800 ${f1}px ${F}`; g.fillText(l1,cx+pad,y); y+=f1*1.25 } if(l2){ g.font=`600 ${f2}px ${F}`; g.fillStyle="#3a3f46"; g.fillText(l2,cx+pad,y) }
-  if(prix){ g.font=`800 ${f1}px ${F}`; const pw=g.measureText(prix).width+pad*1.4, ph=f1*1.7; const px=W-mx-pw, py=cy-ph*.45; g.fillStyle=acc; g.beginPath(); g.roundRect(px,py,pw,ph,ph/2); g.fill(); g.fillStyle="#fff"; g.textBaseline="middle"; g.fillText(prix,px+pad*.7,py+ph/2+f1*.05) } }
+}
 async function stExport(){ const cv=document.createElement("canvas"); const size=Math.min(1600,Math.max(900,ST.img?Math.min(ST.img.width,ST.img.height):900)); stRender(cv,size,true); return new Promise(res=>cv.toBlob(b=>res(b),"image/jpeg",.92)) }
 async function stShare(){ stSnap(); const base=`rayon-${(brandName(ST.art.marque)||"photo").toLowerCase().replace(/[^a-z0-9]+/g,"-")}`; const files=[]; const cur=ST.cur;
   for(let i=0;i<ST.items.length;i++){ stSelect(i); const blob=await stExport(); if(blob) files.push(new File([blob],`${base}-${i+1}.jpg`,{type:"image/jpeg"})) } stSelect(cur); stDrawSoon();
