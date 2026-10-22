@@ -194,7 +194,8 @@ textarea.inp{height:auto;min-height:90px;padding:10px 12px;line-height:1.45}
 .photo{width:100%;aspect-ratio:4/3;max-width:100%;border-radius:14px;border:1px dashed var(--line);background:var(--surface);display:grid;place-items:center;overflow:hidden;cursor:pointer;position:relative;color:var(--muted);font-weight:600}
 .photo img{width:100%;height:100%;object-fit:cover;cursor:zoom-in}
 .photo-add{position:absolute;inset:0;display:grid;place-items:center;cursor:pointer}
-.photo-chg{position:absolute;right:8px;bottom:8px;background:rgba(5,12,10,.72);color:#fff;font-size:12px;font-weight:700;padding:6px 10px;border-radius:999px;cursor:pointer;backdrop-filter:blur(6px)}
+.photo-tools{position:absolute;right:8px;bottom:8px;display:flex;gap:6px} .photo-tools .photo-chg{position:static}
+.photo-chg{position:absolute;right:8px;bottom:8px;border:0;font-family:inherit;background:rgba(5,12,10,.72);color:#fff;font-size:12px;font-weight:700;padding:6px 10px;border-radius:999px;cursor:pointer;backdrop-filter:blur(6px)}
 .photo-zoom{position:absolute;left:8px;bottom:8px;background:rgba(5,12,10,.72);color:#fff;font-size:12px;font-weight:700;padding:6px 10px;border-radius:999px;pointer-events:none}
 .thumb img{cursor:zoom-in}
 /* visionneuse plein écran */
@@ -205,6 +206,18 @@ textarea.inp{height:auto;min-height:90px;padding:10px 12px;line-height:1.45}
 .lb-top{position:absolute;top:0;left:0;right:0;display:flex;justify-content:space-between;align-items:center;padding:calc(10px + env(safe-area-inset-top,0px)) 14px 10px;color:#fff;font-size:14px;font-weight:600;background:linear-gradient(rgba(0,0,0,.5),transparent)}
 .lb-top button{background:rgba(255,255,255,.14);color:#fff;border:0;border-radius:999px;width:38px;height:38px;font-size:18px;display:grid;place-items:center;cursor:pointer}
 .lb-hint{position:absolute;bottom:calc(14px + env(safe-area-inset-bottom,0px));left:0;right:0;text-align:center;color:rgba(255,255,255,.6);font-size:12px;pointer-events:none}
+/* studio photo */
+.st-wrap{position:relative;width:100%;aspect-ratio:1;background:#111;border-radius:14px;overflow:hidden;touch-action:none;contain:inline-size}
+.st-wrap canvas{width:100%;height:100%;display:block}
+.st-wrap.r45{aspect-ratio:4/5}
+.st-row{display:grid;grid-template-columns:76px 1fr 44px;align-items:center;gap:10px;font-size:13px;margin:6px 0}
+.st-row input[type=range]{width:100%;accent-color:var(--accent)}
+.st-row .mono{text-align:right;color:var(--muted)}
+.st-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.st-strip{display:flex;gap:8px;overflow-x:auto;padding:2px 0 10px;contain:inline-size}
+.st-th{position:relative;flex:none;width:58px;height:58px;border-radius:10px;overflow:hidden;border:2px solid var(--line);background:var(--surface-2);padding:0;cursor:pointer;display:grid;place-items:center;font-size:24px;color:var(--accent);font-weight:800}
+.st-th img{width:100%;height:100%;object-fit:cover} .st-th.on{border-color:var(--accent)} .st-th i{position:absolute;left:4px;top:3px;font-style:normal;font-size:11px;font-weight:800;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.6)}
+.st-hint{font-size:12px;color:var(--muted);margin-top:6px}
 /* projection */
 .proj{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin:12px 0}
 .proj .pc{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px;text-align:center}
@@ -388,6 +401,7 @@ details.prec{border-color:var(--accent);background:var(--accent-soft)} details.p
   <div class="pk-top"><label class="search"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg><input id="pickQ" type="search" placeholder="Rechercher une marque…" autocomplete="off" aria-label="Rechercher une marque"></label><button type="button" class="x" id="pickClose" aria-label="Fermer">✕</button></div>
   <div class="pk-list" id="pickList"></div></div></div>
 <div class="lb" id="lightbox" hidden role="dialog" aria-modal="true" aria-label="Photo en plein écran"><img id="lbImg" alt="Photo de l'article" draggable="false"><div class="lb-top"><span id="lbTitle"></span><button type="button" id="lbClose" aria-label="Fermer">✕</button></div><div class="lb-hint">Pince ou double‑tape pour zoomer · tape pour fermer</div></div>
+<div class="picker" id="studio" hidden role="dialog" aria-modal="true" aria-label="Studio photo"><div class="pk"><div class="pk-top" style="align-items:center;justify-content:space-between"><b style="font-family:var(--f-display);font-size:18px">✨ Studio photo</b><button type="button" class="x" id="studioClose" aria-label="Fermer">✕</button></div><div class="pk-list" id="studioBody"></div></div></div>
 <div class="toast" id="toast"></div>
 <input type="file" id="fileImport" accept="application/json,.json" hidden>
 
@@ -1293,74 +1307,85 @@ const pick=(r,arr)=>arr[Math.floor(r()*arr.length)];
 const cap=s=>s?s.charAt(0).toUpperCase()+s.slice(1):s;
 const tagify=s=>"#"+norm(s).replace(/ /g,"");
 function genAnnonce(a,ton,seed){
+  /* Format qui vend sur Vinted : accroche factuelle (1 ligne), fiche technique en lignes courtes, conditions, mots-clés.
+     Pas de storytelling, pas de tiret cadratin, 80 à 140 mots. */
   const r=rng(seed), S=db.settings;
   const t=TYPES[a.type]||TYPES.Autre, br=brandOf(a.marque), e=ETATS[a.etat]||ETATS["Très bon état"];
-  const marque=br&&br.name==="Sans marque"?"":brandName(a.marque), type=a.type||"Pièce", typeL=type.toLowerCase();
-  const ce=t.g==="f"?"Cette":t.g==="fp"?"Ces":"Ce", un=t.g==="f"?"une":t.g==="fp"?"des":"un";
-  const det=a.details||[], coul=(a.couleur||"").toLowerCase();
+  const marque=br&&br.name==="Sans marque"?"":brandName(a.marque), type=a.type||"Pièce", typeL=type.toLowerCase().replace(/ \/ .*$/,"");
+  const det=a.details||[], coul=(a.couleur||"").toLowerCase(), modele=(a.modele||"").trim();
   const keyDet=det.find(d=>["Col camionneur","Capuche","Zippé","Col V","Grand logo","Logo brodé","Vintage"].includes(d));
   const month=new Date().getMonth()+1, coldSeason=month>=9||month<=3;
-  // title
-  const parts=[type==="Gilet / Zip"?(det.includes("Zippé")?"Zip":"Gilet"):type, marque, (a.modele||"").trim()];
-  if(keyDet&&keyDet!=="Logo brodé"&&ton!=="express") parts.push(keyDet.toLowerCase());
-  if(coul) parts.push(coul);
-  if(ton==="pepite"&&det.includes("Vintage")&&!parts.includes("vintage")) parts.push("vintage");
-  parts.push(a.taille?"T. "+a.taille:"");
-  let titre=parts.filter(Boolean).join(" ").replace(/\s+/g," ");
-  if(a.etat==="Neuf avec étiquette") titre+=" neuf";
-  // lines
+  // ---------- titre (50 caractères max, marque en tête) ----------
+  const typeT=type==="Gilet / Zip"?(det.includes("Zippé")?"Gilet zippé":"Gilet"):type.replace(/ \/ .*$/,"");
+  const fit=det.includes("Oversize")?"oversize":det.includes("Coupe ajustée")?"slim":"";
+  const nobleMat=["Lin","Laine","Laine mérinos","Cachemire","Cuir","Daim","Soie","Mohair","Alpaga","Gore-Tex","Tweed","Velours côtelé","Coton bio"].includes(a.matiere)?a.matiere.toLowerCase():"";
+  const flag=/^Neuf/.test(a.etat||"")?"neuf":det.includes("Vintage")?"vintage":"";
+  const pattern=det.includes("À carreaux")?"carreaux":det.includes("Rayé")?"rayé":det.includes("Imprimé")?"imprimé":"";
+  const sizeT=a.taille?(/^P\d/.test(a.taille)?"pointure "+a.taille.slice(1):"taille "+a.taille):"";
+  const cand=[[marque,10,0],[typeT,10,1],[modele,9,2],[flag,8.5,3],[coul,7,4],[pattern,6,5],[nobleMat,5,6],[fit,4,7],[keyDet&&!["Logo brodé","Vintage"].includes(keyDet)?keyDet.toLowerCase():"",3,8],[sizeT,8,9]].filter(c=>c[0]);
+  const build=cs=>cs.slice().sort((x,y)=>x[2]-y[2]).map(c=>c[0]).join(" ").replace(/\s+/g," ").trim();
+  let keep=cand.slice(); let titre=build(keep);
+  while(titre.length>50&&keep.some(c=>c[1]<10)){ const minP=Math.min(...keep.filter(c=>c[1]<10).map(c=>c[1])); const i=keep.findIndex(c=>c[1]===minP); keep.splice(i,1); titre=build(keep) }
+  if(titre.length>50&&a.taille){ const i=keep.findIndex(c=>c[0]===sizeT); if(i>=0){keep[i]=[a.taille,8,9];titre=build(keep)} }
+  if(titre.length>50) titre=titre.slice(0,50).replace(/\s\S*$/,"");
+  titre=titre.charAt(0).toUpperCase()+titre.slice(1);
+  // ---------- matière première ----------
+  const est=estimate(a); const retail=est.retail>0?Math.round(est.retail/5)*5:0; const prix=num(a.prixAffiche)>0?num(a.prixAffiche):est.list;
+  const anchor=num(a.prixNeuf)>0&&prix>0&&num(a.prixNeuf)>prix*1.6?`${Math.round(num(a.prixNeuf))} € neuf en boutique`:"";
+  const etatTxt=a.etat?a.etat.toLowerCase():"très bon état";
+  const mes=[]; if(has(a.mesure1)) mes.push(`largeur ${num(a.mesure1)} cm`); if(has(a.mesure2)) mes.push(`longueur ${num(a.mesure2)} cm`);
+  const defaut=[(a.defs||[]).map(x=>x.toLowerCase()).join(", "),(a.defauts||"").trim()].filter(Boolean).join(", ");
+  const fitL=det.includes("Oversize")?"coupe oversize":det.includes("Coupe ajustée")?"coupe slim":"";
+  const extraDet=det.filter(d=>!["Oversize","Coupe ajustée"].includes(d)).map(d=>d.toLowerCase());
+  const rare=a.taille&&["XS","XXS","XL","XXL","3XL","4XL","P45","P46","P36","P37"].includes(a.taille)?`taille ${a.taille} rare`:"";
+  const season=t.warm&&coldSeason?"parfait pour la saison":"";
+  const lot=S.remiseLot>0?`-${S.remiseLot} % dès 2 articles (lot)`:"lots possibles";
+  const nom=[typeL,marque,modele].filter(Boolean).join(" ");
+  // synonymes de recherche
+  const SYN={"Chemise":"chemise manches longues","Sweat":"sweatshirt col rond crewneck","Hoodie":"sweat à capuche hoodie","Pull":"pull maille knit","Gilet / Zip":"gilet zippé","Cardigan":"gilet cardigan","T-shirt":"tee shirt tshirt","Polo":"polo manches courtes","Veste":"veste jacket","Blouson":"blouson bomber","Veste en jean":"veste en jean denim jacket","Veste en cuir":"veste cuir perfecto","Doudoune":"doudoune puffer","Parka":"parka manteau","Manteau":"manteau coat","Trench":"trench imperméable","Blazer":"veste de costume blazer","Costume":"costume suit","Jean":"jean denim","Pantalon":"pantalon","Chino":"chino pantalon","Jogging":"jogging survêtement pantalon de sport","Short":"short bermuda","Baskets":"baskets sneakers","Running":"running chaussures de sport","Chaussures de ville":"chaussures de ville derbies","Mocassins":"mocassins loafers","Bottes / Bottines":"bottes bottines boots","Sac à dos":"sac à dos backpack","Sac banane":"sac banane bum bag","Cravate":"cravate soie","Montre":"montre watch","Lunettes de soleil":"lunettes de soleil sunglasses","Maillot de foot":"maillot football jersey"};
+  const kw=[...new Set([typeL,marque,modele,SYN[type]||"",coul,a.matiere?a.matiere.toLowerCase():"",a.taille?"taille "+a.taille:"",fit,det.includes("Vintage")?"vintage":"",a.genre==="Femme"?"femme":a.genre==="Enfant"?"enfant":"homme",br?br.style:""].filter(Boolean).join(" ").toLowerCase().split(/\s+/))].join(" ");
   const L=[];
-  const styleLine=br&&br.sigs.length&&marque?pick(r,br.sigs):"";
-  const originLine=br&&br.origin&&br.tier>=4&&marque?`Marque ${br.origin==="France"?"française":br.origin==="Italie"?"italienne":br.origin==="Royaume-Uni"?"britannique":br.origin==="États-Unis"?"américaine":"de "+br.origin}, ${br.style}.`:"";
-  const seasonLine = t.warm&&coldSeason ? pick(r,["Pile la bonne saison pour le porter.","Parfait pour l'automne et l'hiver.","Idéal pour les journées fraîches."]) : (!t.warm&&!coldSeason?pick(r,["Parfait pour la belle saison.","Idéal pour les beaux jours."]):"");
-  const matLine=a.matiere?`${a.matiere}`:"";
-  const fitLine=det.includes("Oversize")?"coupe oversize":det.includes("Coupe ajustée")?"coupe ajustée":"";
-  const mes=[]; if(has(a.mesure1)) mes.push(`largeur à plat ${num(a.mesure1)} cm`); if(has(a.mesure2)) mes.push(`longueur ${num(a.mesure2)} cm`);
-  const defaut=[(a.defs||[]).map(x=>x.toLowerCase()).join(", "),(a.defauts||"").trim()].filter(Boolean).join(" — ");
-  const extraDet=det.filter(d=>!["Oversize","Coupe ajustée"].includes(d));
-  const lotLine=S.remiseLot>0?`-${S.remiseLot} % dès 2 articles achetés ensemble, jette un œil à mon dressing.`:"Jette un œil à mon dressing, je fais des lots.";
+  const line1=`${cap(nom)}${coul?" "+coul:""}${a.taille?", taille "+a.taille:""}${fitL?", "+fitL:""}. ${cap(etatTxt)}${defaut?", "+defaut:", aucun défaut"}.${anchor?" "+cap(anchor)+".":""}`;
   if(ton==="pepite"){
-    const va=t.g==="fp"?"vont":"va";
-    L.push(pick(r,[`🔥 ${ce} ${typeL} ${marque} ${va} partir vite.`,`✨ Coup de cœur : ${typeL} ${marque} ${coul} en ${a.etat?a.etat.toLowerCase():"très bon état"}.`,`🔥 ${cap(un)} ${typeL} ${marque} comme on les aime.`]));
-    if(styleLine) L.push(cap(styleLine)+(seasonLine?". "+seasonLine:"."));
-    else if(seasonLine) L.push(seasonLine);
-    if(originLine) L.push(originLine);
+    L.push(pick(r,["🔥 ","✨ ","💎 "])+line1);
+    const plus=[rare,season].filter(Boolean); if(plus.length) L.push(cap(plus.join(", "))+".");
     L.push("");
-    if(marque) L.push(`✔️ Marque : ${marque}`);
-    if(a.taille) L.push(`✔️ Taille : ${a.taille}${fitLine?" ("+fitLine+")":""}`);
-    if(a.etat) L.push(`✔️ État : ${a.etat.toLowerCase()}, ${e.d}`);
-    if(matLine) L.push(`✔️ Matière : ${matLine}`);
+    if(marque) L.push(`✔️ Marque : ${marque}${modele?" "+modele:""}`);
+    if(a.taille) L.push(`✔️ Taille : ${a.taille}${fitL?", "+fitL:""}`);
     if(a.couleur) L.push(`✔️ Couleur : ${coul}`);
-    if(extraDet.length) L.push(`✔️ Détails : ${extraDet.map(d=>d.toLowerCase()).join(", ")}`);
-    if(mes.length) L.push(`📏 Mesures : ${mes.join(" · ")}`);
-    if(defaut) L.push(`⚠️ À noter : ${defaut} (visible en photo)`); else if(e.clean) L.push("👌 Aucun défaut, prêt à porter.");
-    L.push(""); L.push("📦 Envoi rapide et soigné sous 24/48 h.");
-    L.push("💬 "+lotLine);
+    if(a.matiere) L.push(`✔️ Matière : ${a.matiere.toLowerCase()}`);
+    L.push(`✔️ État : ${etatTxt}, ${e.d}`);
+    if(mes.length) L.push(`📏 Mesures : ${mes.join(", ")}`);
+    if(extraDet.length) L.push(`✔️ Détails : ${extraDet.join(", ")}`);
+    if(defaut) L.push(`⚠️ À noter : ${defaut}, visible en photo, prix ajusté`);
+    L.push("");
+    L.push("📦 Envoi sous 24/48 h, colis soigné");
+    L.push(`🔁 ${cap(lot)}`);
+    L.push("💬 Offres raisonnables acceptées");
   } else if(ton==="clean"){
-    L.push(`${cap(un)} ${typeL} ${marque}${coul?" "+coul:""}${a.taille?", taille "+a.taille:""}.`);
-    const s2=[]; if(styleLine) s2.push(cap(styleLine)); if(matLine) s2.push(`en ${matLine.toLowerCase()}`);
-    if(s2.length) L.push(s2.join(", ")+(fitLine?", "+fitLine:"")+".");
-    L.push(`État : ${a.etat?a.etat.toLowerCase():"très bon état"}, ${e.d}.`);
-    if(extraDet.length) L.push(`Détails : ${extraDet.map(d=>d.toLowerCase()).join(", ")}.`);
-    if(mes.length) L.push(`Mesures à plat : ${mes.join(", ")}.`);
-    if(defaut) L.push(`Défaut à signaler : ${defaut}, visible sur les photos.`);
-    if(seasonLine) L.push(seasonLine);
-    L.push(""); L.push("Vêtement propre, envoyé plié avec soin sous 24/48 h.");
-    L.push(lotLine);
+    L.push(line1);
+    const plus=[rare,season].filter(Boolean); if(plus.length) L.push(cap(plus.join(", "))+".");
+    L.push("");
+    const f=[]; if(marque) f.push(`Marque : ${marque}${modele?" "+modele:""}`); if(a.taille) f.push(`Taille : ${a.taille}`); if(a.couleur) f.push(`Couleur : ${coul}`); if(a.matiere) f.push(`Matière : ${a.matiere.toLowerCase()}`); f.push(`État : ${etatTxt}, ${e.d}`); if(mes.length) f.push(`Mesures à plat : ${mes.join(", ")}`); if(extraDet.length) f.push(`Détails : ${extraDet.join(", ")}`); if(defaut) f.push(`À noter : ${defaut}, visible en photo`);
+    L.push(...f);
+    L.push("");
+    L.push("Envoi sous 24/48 h, colis soigné. "+cap(lot)+". Offres raisonnables acceptées.");
   } else {
-    L.push(`${type} ${marque}${a.taille?" · taille "+a.taille:""}${coul?" · "+coul:""}`);
-    L.push(`${a.etat||"Très bon état"}${defaut?" · "+defaut:""}`);
-    if(mes.length) L.push(`📏 ${mes.join(" · ")}`);
-    L.push("📦 Envoi 24/48 h · "+(S.remiseLot>0?`-${S.remiseLot} % en lot`:"lots possibles"));
+    L.push(`${cap(nom)}${a.taille?" taille "+a.taille:""}${coul?" "+coul:""}`);
+    L.push(`${cap(etatTxt)}${defaut?", "+defaut:""}${a.matiere?", "+a.matiere.toLowerCase():""}`);
+    if(mes.length) L.push(mes.join(", "));
+    L.push("Envoi 24/48 h, "+lot);
   }
+  if(ton!=="express"){ L.push(""); L.push("Mots-clés : "+kw) }
   const tags=new Set();
   if(br) br.tags.forEach(x=>tags.add("#"+x)); else if(marque) tags.add(tagify(marque));
   tags.add("#"+t.tag); if(coul) tags.add(tagify(coul.split(" ")[0]));
   if(det.includes("Vintage")) tags.add("#vintage");
   if(t.warm&&coldSeason) tags.add("#automne");
-  tags.add("#homme");
-  const hashtags=[...tags].slice(0,ton==="express"?5:9).join(" ");
-  return {titre:titre.slice(0,90),desc:L.join("\n").replace(/ {2,}/g," ").replace(/ ([.,])/g,"$1").replace(/\n{3,}/g,"\n\n"),hashtags};
+  tags.add(a.genre==="Femme"?"#femme":"#homme");
+  const hashtags=[...tags].slice(0,ton==="express"?5:8).join(" ");
+  const clean=x=>x.replace(/[—–]/g,",").replace(/ ,/g,",").replace(/ {2,}/g," ").replace(/ ([.,])/g,"$1").replace(/\n{3,}/g,"\n\n");
+  return {titre:clean(titre).slice(0,50),desc:clean(L.join("\n")),hashtags};
 }
 
 /* ================= rendering ================= */
@@ -1470,7 +1495,7 @@ function viewHome(){
   `;
 }
 
-function photoBoxHTML(img){ return img?`${img}<span class="photo-zoom">⤢ Voir en grand</span><label class="photo-chg" for="fPhoto">📷 Changer</label>`:`<label class="photo-add" for="fPhoto">📷 Ajouter une photo</label>` }
+function photoBoxHTML(img){ return img?`${img}<span class="photo-zoom">⤢ Voir en grand</span><span class="photo-tools"><button type="button" class="photo-chg" data-act="studio">✨ Studio</button><label class="photo-chg" for="fPhoto">📷 Changer</label></span>`:`<label class="photo-add" for="fPhoto">📷 Ajouter une photo</label><button type="button" class="photo-chg" data-act="studio" style="right:auto;left:8px">✨ Studio</button>` }
 function artThumb(a){
   const init=esc((a.marque||a.type||"?").trim().charAt(0).toUpperCase());
   return `<div class="thumb">${a.photo?`<img data-photo="${a.id}" alt="">`:init}</div>`;
@@ -1687,7 +1712,7 @@ document.addEventListener("pointerup",()=>{ if(!SD.on) return; SD.on=false; cons
 const layers=[]; let popping=false, expectPop=0;
 function pushLayer(n){ layers.push(n); try{history.pushState({layer:n,depth:layers.length},"")}catch(e){} }
 function popLayer(n){ const i=layers.lastIndexOf(n); if(i<0) return; layers.splice(i,1); if(!popping){ expectPop++; try{history.back()}catch(e){expectPop--} } }
-window.addEventListener("popstate",()=>{ if(expectPop>0){expectPop--;return} if(!layers.length) return; popping=true; const n=layers[layers.length-1]; if(n==="lightbox") closeLightbox(); else if(n==="picker") closePicker(); else closeSheet(); popping=false; });
+window.addEventListener("popstate",()=>{ if(expectPop>0){expectPop--;return} if(!layers.length) return; popping=true; const n=layers[layers.length-1]; if(n==="lightbox") closeLightbox(); else if(n==="studio") closeStudio(); else if(n==="picker") closePicker(); else closeSheet(); popping=false; });
 function openSheet(title,html,onClose,footer){
   $("#sheetTitle").textContent=title; $("#sheetBody").innerHTML=html; $("#sheetBody").scrollTop=0;
   const f=$("#sheetFoot"); f.innerHTML=footer||""; f.hidden=!footer;
@@ -1753,8 +1778,8 @@ function artForm(a,opts={}){
       <div class="fg"><label for="fDef">Précision sur les défauts (texte libre)</label><input class="inp" id="fDef" value="${esc(a.defauts||"")}" placeholder="ex : petite bouloche sous le bras"></div>
     </details>
     <details class="more prec" ${a.modele||has(a.prixNeuf)||a.comps||(a.defs||[]).length||(a.genre&&a.genre!=="Homme")?"open":""}><summary>🎯 Affiner le prix (modèle, prix neuf, annonces similaires)</summary>
-      <div class="fg" style="margin-top:10px"><label for="fModele">Modèle / collection</label><input class="inp" id="fModele" value="${esc(a.modele||"")}" placeholder="ex : Big Pony, 501, Nuptse, Reverse Weave…"><span class="hint">Les modèles iconiques se vendent plus cher — l'app en reconnaît une trentaine.</span></div>
-      <div class="row2"><div class="fg"><label for="fNeuf">Prix neuf (€)</label><input class="inp" id="fNeuf" inputmode="decimal" value="${esc(a.prixNeuf??"")}" placeholder="${p.e.retail?"≈ "+Math.round(p.e.retail):""}"><span class="hint">Étiquette ou 10 s sur Google. Le plus gros levier de précision.</span></div>
+      <div class="fg" style="margin-top:10px"><label for="fModele">Modèle / collection</label><input class="inp" id="fModele" value="${esc(a.modele||"")}" placeholder="ex : Big Pony, 501, Nuptse, Reverse Weave…"><span class="hint">Les modèles iconiques se vendent plus cher : l'app en reconnaît une trentaine.</span></div>
+      <div class="row2"><div class="fg"><label for="fNeuf">Prix neuf (€)</label><input class="inp" id="fNeuf" inputmode="decimal" value="${esc(a.prixNeuf??"")}" placeholder="${p.e.retail?"≈ "+Math.round(p.e.retail):""}"><span class="hint">Étiquette ou 10 s sur Google. Affine le prix et s'affiche dans l'annonce (« 110 € neuf en boutique »).</span></div>
         <div class="fg"><span class="lbl">Pour</span>${optGroup("genre",Object.keys(GENRE_M),a.genre||"Homme")}</div></div>
       <div class="fg"><label for="fComps">Annonces similaires vues sur Vinted (€)</label><input class="inp" id="fComps" value="${esc(a.comps||"")}" placeholder="ex : 35 42 38" inputmode="decimal"><span class="hint">Tape les prix de 3 annonces de la même pièce : l'estimation s'aligne dessus.</span></div>
       <div class="fg"><span class="lbl">Défauts</span>${optGroup("defs",Object.keys(DEFAUTS),a.defs,true)}</div>
@@ -1814,6 +1839,76 @@ function openPicker(onPick,current){
   pushLayer("picker"); $("#picker").hidden=false; requestAnimationFrame(()=>$("#picker").classList.add("on"));
   drawPicker(); const i=$("#pickQ"); i.value=""; setTimeout(()=>i.focus(),200);
 }
+/* ---------- Studio photo : recadrage carré, auto-lumière, badge ---------- */
+const ST={img:null,zoom:1,x:0,y:0,bri:0,con:0,warm:0,sat:0,auto:true,badge:"",ratio:"1",drag:null,art:null,raf:0,items:[],cur:0};
+const ST_ADJ=["zoom","x","y","bri","con","warm","sat","auto","badge"];
+function stSnap(){ if(!ST.items[ST.cur]) return; const it=ST.items[ST.cur]; ST_ADJ.forEach(k=>it[k]=ST[k]) }
+function stSelect(i){ stSnap(); ST.cur=i; const it=ST.items[i]; if(!it){ST.img=null;return} ST.img=it.img; ST_ADJ.forEach(k=>ST[k]=it[k]) }
+function stAdd(img){ const it={img,zoom:1,x:0,y:0,bri:0,con:0,warm:0,sat:0,auto:true,badge:ST.items.length?"":ST.items.length===0&&ST.art&&brandName(ST.art.marque)?"complet":""}; ST.items.push(it); return ST.items.length-1 }
+function openStudio(art){ ST.art=art||{}; ST.img=null; ST.items=[]; ST.cur=0; Object.assign(ST,{zoom:1,x:0,y:0,bri:0,con:0,warm:0,sat:0,auto:true,badge:""});
+  const src=pendingPhoto||null; const draw=()=>{ $("#studioBody").innerHTML=studioHTML(); const el=$("#studio"); el.hidden=false; requestAnimationFrame(()=>el.classList.add("on")); pushLayer("studio"); stDrawSoon() };
+  const seed=d=>stLoad(d).then(()=>{ if(ST.img){ const i=stAdd(ST.img); stSelect(i) } draw() });
+  if(src){ seed(src) } else if(art&&art.id&&art.photo){ Photos.get(art.id).then(d=>{ if(d) seed(d); else draw() }) } else draw() }
+function closeStudio(){ const el=$("#studio"); if(el.hidden) return; popLayer("studio"); el.classList.remove("on"); setTimeout(()=>{el.hidden=true;$("#studioBody").innerHTML=""},200); ST.img=null; ST.items=[] }
+function stLoad(src){ return new Promise(res=>{ const im=new Image(); im.onload=()=>{ST.img=im;res()}; im.onerror=()=>res(); im.src=src }) }
+function studioHTML(){ const a=ST.art, m=brandName(a.marque), prix=num(a.prixAffiche)>0?Math.round(num(a.prixAffiche))+" €":"";
+  const badges=[["","Aucun"],["complet","Complet"],["marque",m||"Marque"],["prix",prix||"Prix"],["neuf","NEUF"],["lot","-% lot"]];
+  const strip=ST.items.length?`<div class="st-strip">${ST.items.map((it,i)=>`<button type="button" class="st-th ${i===ST.cur?"on":""}" data-act="st-sel" data-i="${i}"><img src="${it.img.src}" alt=""><i>${i+1}</i></button>`).join("")}<label class="st-th add" for="stFile">+</label></div>`:"";
+  return `${strip}
+   <div class="st-wrap ${ST.ratio==="45"?"r45":""}" id="stWrap"><canvas id="stCanvas" width="900" height="${ST.ratio==="45"?1125:900}"></canvas>${ST.img?"":`<div style="position:absolute;inset:0;display:grid;place-items:center;color:#aaa;font-size:14px;text-align:center;padding:20px">Choisis une photo pour commencer<br><small>(la photo d'origine, pas une capture)</small></div>`}</div>
+   <input type="file" id="stFile" accept="image/*" multiple hidden>
+   <div class="btns" style="margin-top:10px"><label class="btn sm" for="stFile">📷 ${ST.img?"Ajouter des photos":"Choisir les photos"}</label><button type="button" class="btn sm ${ST.auto?"pri":""}" data-act="st-auto">✨ Auto</button><button type="button" class="btn sm" data-act="st-ratio">${ST.ratio==="1"?"Carré 1:1":"Portrait 4:5"}</button><button type="button" class="btn sm" data-act="st-reset">↺</button></div>
+   <p class="st-hint">Pince ou glisse pour cadrer : la pièce doit remplir le cadre. Carré = ce que montre le feed Vinted.</p>
+   <div class="st-row"><span>Zoom</span><input type="range" id="stZoom" min="100" max="300" value="${Math.round(ST.zoom*100)}"><span class="mono">${ST.zoom.toFixed(1)}×</span></div>
+   <div class="st-row"><span>Lumière</span><input type="range" data-k="bri" min="-40" max="60" value="${ST.bri}"><span class="mono">${ST.bri}</span></div>
+   <div class="st-row"><span>Contraste</span><input type="range" data-k="con" min="-30" max="50" value="${ST.con}"><span class="mono">${ST.con}</span></div>
+   <div class="st-row"><span>Chaleur</span><input type="range" data-k="warm" min="-30" max="30" value="${ST.warm}"><span class="mono">${ST.warm}</span></div>
+   <div class="st-row"><span>Couleurs</span><input type="range" data-k="sat" min="-40" max="50" value="${ST.sat}"><span class="mono">${ST.sat}</span></div>
+   <div class="fg" style="margin-top:8px"><span class="lbl">Badge sur la photo</span><div class="opt" data-opt="badge">${badges.map(([v,l])=>`<button type="button" data-v="${esc(v)}" class="${ST.badge===v?"on":""}" data-act="st-badge" ${!v&&ST.badge===""?"":""}>${esc(l)}</button>`).join("")}</div>
+   <span class="hint">« Complet » = marque, taille, état et prix dans un coin : les 4 infos qui font cliquer. Sur la photo 1 seulement, les suivantes restent nues (Vinted veut des photos fidèles).</span></div>
+   ${ST.items.length>1?`<div class="btns" style="margin-top:8px"><button type="button" class="btn sm" data-act="st-apply-all">Appliquer la lumière à toutes</button></div>`:""}
+   <div class="st-grid"><button type="button" class="btn pri" data-act="st-share" ${ST.img?"":"disabled"}>⬇︎ ${ST.items.length>1?"Enregistrer les "+ST.items.length+" photos":"Enregistrer / partager"}</button><button type="button" class="btn" data-act="st-use" ${ST.img?"":"disabled"}>Photo ${ST.cur+1} pour la fiche</button></div>`}
+function stDrawSoon(){ cancelAnimationFrame(ST.raf); ST.raf=requestAnimationFrame(()=>stRender($("#stCanvas"),900)) }
+function stRender(cv,size,final){ if(!cv) return; const im=ST.img; const W=size, H=ST.ratio==="45"?Math.round(size*1.25):size; cv.width=W; cv.height=H; const g=cv.getContext("2d"); g.fillStyle="#f3f1ec"; g.fillRect(0,0,W,H); if(!im) return;
+  const k=Math.max(W/im.width,H/im.height)*ST.zoom; const dw=im.width*k, dh=im.height*k; const maxX=(dw-W)/2, maxY=(dh-H)/2; ST.x=Math.max(-maxX,Math.min(maxX,ST.x)); ST.y=Math.max(-maxY,Math.min(maxY,ST.y));
+  g.drawImage(im,(W-dw)/2+ST.x,(H-dh)/2+ST.y,dw,dh);
+  const id=g.getImageData(0,0,W,H), d=id.data, n=d.length;
+  let lo=0,hi=255; if(ST.auto){ const hist=new Uint32Array(256); for(let i=0;i<n;i+=16){hist[(d[i]*299+d[i+1]*587+d[i+2]*114)/1000|0]++} const tot=n/16; let c=0; for(let i=0;i<256;i++){c+=hist[i]; if(c>tot*.006){lo=i;break}} c=0; for(let i=255;i>=0;i--){c+=hist[i]; if(c>tot*.004){hi=i;break}} lo=Math.min(lo,40); hi=Math.max(hi,205); if(hi-lo<60){lo=0;hi=255} }
+  const bri=ST.bri*1.6+(ST.auto?8:0), con=1+ST.con/100+(ST.auto?.08:0), sat=1+ST.sat/100+(ST.auto?.12:0), wr=ST.warm*.5, wb=-ST.warm*.5, span=hi-lo||1;
+  const lut=new Uint8ClampedArray(256); for(let v=0;v<256;v++){ let x=(v-lo)*255/span; x=(x-128)*con+128+bri; lut[v]=x }
+  for(let i=0;i<n;i+=4){ let r=lut[d[i]],gg=lut[d[i+1]],b=lut[d[i+2]]; if(sat!==1){const l=(r*299+gg*587+b*114)/1000; r=l+(r-l)*sat; gg=l+(gg-l)*sat; b=l+(b-l)*sat} d[i]=r+wr; d[i+1]=gg; d[i+2]=b+wb }
+  g.putImageData(id,0,0);
+  if(ST.badge) stBadge(g,W,H) }
+function stBadge(g,W,H){ const a=ST.art||{}, m=brandName(a.marque)||"", prix=num(a.prixAffiche)>0?Math.round(num(a.prixAffiche))+" €":"", etat=a.etat||"", neuf=/^Neuf/.test(etat);
+  const F="Bricolage Grotesque, Figtree, system-ui, sans-serif"; const pill=(txt,x,y,fs,bg,fg,weight=800)=>{ g.font=`${weight} ${fs}px ${F}`; const pad=fs*.7, tw=g.measureText(txt).width, bw=tw+pad*2, bh=fs*1.9; g.fillStyle=bg; g.beginPath(); g.roundRect(x,y,bw,bh,bh/2); g.fill(); g.fillStyle=fg; g.textBaseline="middle"; g.fillText(txt,x+pad,y+bh/2+fs*.05); return {w:bw,h:bh} };
+  const mx=W*.04, fs=Math.round(W*.045), dark="rgba(20,22,24,.9)", acc="#0f766e";
+  if(ST.badge==="marque"){ if(m) pill(m,mx,H-fs*1.9-mx,fs,dark,"#fff"); return }
+  if(ST.badge==="prix"){ if(prix) pill(prix,mx,H-fs*1.9-mx,fs,acc,"#fff"); return }
+  if(ST.badge==="neuf"){ pill(neuf?"NEUF":"COMME NEUF",mx,H-fs*1.9-mx,fs,acc,"#fff"); return }
+  if(ST.badge==="lot"){ pill(`-${db.settings.remiseLot||10} % DÈS 2 ARTICLES`,mx,H-fs*1.9-mx,fs,acc,"#fff"); return }
+  // complet : carte 4 infos
+  const l1=m||"", l2=[a.taille?(/^P\d/.test(a.taille)?"Pointure "+a.taille.slice(1):"Taille "+a.taille):"",etat?(neuf?"Neuf":etat.replace("Très bon état","Très bon état")):""].filter(Boolean).join("  ·  ");
+  const f1=Math.round(W*.05), f2=Math.round(W*.032), pad=W*.03; g.font=`800 ${f1}px ${F}`; const w1=g.measureText(l1).width; g.font=`600 ${f2}px ${F}`; const w2=g.measureText(l2).width;
+  const cw=Math.max(w1,w2)+pad*2, ch=(l1?f1*1.25:0)+(l2?f2*1.5:0)+pad*1.6, cx=mx, cy=H-ch-mx;
+  g.fillStyle="rgba(255,255,255,.94)"; g.beginPath(); g.roundRect(cx,cy,cw,ch,W*.025); g.fill(); g.strokeStyle="rgba(0,0,0,.08)"; g.lineWidth=2; g.stroke();
+  let y=cy+pad*.9; g.textBaseline="top"; g.fillStyle="#141618"; if(l1){ g.font=`800 ${f1}px ${F}`; g.fillText(l1,cx+pad,y); y+=f1*1.25 } if(l2){ g.font=`600 ${f2}px ${F}`; g.fillStyle="#3a3f46"; g.fillText(l2,cx+pad,y) }
+  if(prix){ g.font=`800 ${f1}px ${F}`; const pw=g.measureText(prix).width+pad*1.4, ph=f1*1.7; const px=W-mx-pw, py=cy-ph*.45; g.fillStyle=acc; g.beginPath(); g.roundRect(px,py,pw,ph,ph/2); g.fill(); g.fillStyle="#fff"; g.textBaseline="middle"; g.fillText(prix,px+pad*.7,py+ph/2+f1*.05) } }
+async function stExport(){ const cv=document.createElement("canvas"); const size=Math.min(1600,Math.max(900,ST.img?Math.min(ST.img.width,ST.img.height):900)); stRender(cv,size,true); return new Promise(res=>cv.toBlob(b=>res(b),"image/jpeg",.92)) }
+async function stShare(){ stSnap(); const base=`rayon-${(brandName(ST.art.marque)||"photo").toLowerCase().replace(/[^a-z0-9]+/g,"-")}`; const files=[]; const cur=ST.cur;
+  for(let i=0;i<ST.items.length;i++){ stSelect(i); const blob=await stExport(); if(blob) files.push(new File([blob],`${base}-${i+1}.jpg`,{type:"image/jpeg"})) } stSelect(cur); stDrawSoon();
+  if(!files.length) return;
+  try{ if(navigator.canShare&&navigator.canShare({files})){ await navigator.share({files,title:"Photos Vinted"}); return } }catch(e){ if(e&&e.name==="AbortError") return }
+  for(const f of files){ const url=URL.createObjectURL(f); const a=document.createElement("a"); a.href=url; a.download=f.name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(url),5000); await new Promise(r=>setTimeout(r,300)) } toast(files.length>1?`${files.length} photos enregistrées`:"Photo enregistrée") }
+async function stUse(){ const blob=await stExport(); if(!blob) return; const data=await new Promise(res=>{const r=new FileReader();r.onload=()=>res(r.result);r.readAsDataURL(blob)}); const im=new Image(); im.onload=()=>{ const M=1000,k=Math.min(1,M/Math.max(im.width,im.height)); const c=document.createElement("canvas"); c.width=Math.round(im.width*k); c.height=Math.round(im.height*k); c.getContext("2d").drawImage(im,0,0,c.width,c.height); pendingPhoto=c.toDataURL("image/jpeg",.8);
+    closeStudio(); const pb=$("#photoBox"); if(pb) pb.innerHTML=photoBoxHTML(`<img src="${pendingPhoto}" alt="Photo de l'article">`); toast("Photo prête, pense à enregistrer la fiche") }; im.src=data }
+// gestes : glisser pour cadrer, pincer pour zoomer
+const STG={pts:new Map(),d0:0,z0:1,x0:0,y0:0};
+document.addEventListener("pointerdown",e=>{ const w=e.target.closest("#stWrap"); if(!w||!ST.img) return; w.setPointerCapture&&w.setPointerCapture(e.pointerId); STG.pts.set(e.pointerId,{x:e.clientX,y:e.clientY}); if(STG.pts.size===2){const [a,b]=[...STG.pts.values()];STG.d0=Math.hypot(a.x-b.x,a.y-b.y);STG.z0=ST.zoom} else {STG.x0=ST.x;STG.y0=ST.y;STG.sx=e.clientX;STG.sy=e.clientY} });
+document.addEventListener("pointermove",e=>{ if(!STG.pts.has(e.pointerId)) return; STG.pts.set(e.pointerId,{x:e.clientX,y:e.clientY}); const w=$("#stWrap"); if(!w) return; const scale=900/w.clientWidth;
+  if(STG.pts.size===2){const [a,b]=[...STG.pts.values()]; ST.zoom=Math.min(3,Math.max(1,STG.z0*Math.hypot(a.x-b.x,a.y-b.y)/(STG.d0||1))); const z=$("#stZoom"); if(z) z.value=Math.round(ST.zoom*100)}
+  else { ST.x=STG.x0+(e.clientX-STG.sx)*scale; ST.y=STG.y0+(e.clientY-STG.sy)*scale } stDrawSoon() });
+document.addEventListener("pointerup",e=>{ if(STG.pts.has(e.pointerId)){ STG.pts.delete(e.pointerId); if(STG.pts.size===1){const [a]=[...STG.pts.values()];STG.x0=ST.x;STG.y0=ST.y;STG.sx=a.x;STG.sy=a.y} } });
+document.addEventListener("pointercancel",e=>STG.pts.delete(e.pointerId));
 /* ---------- Visionneuse photo ---------- */
 const LB={scale:1,x:0,y:0,pts:new Map(),d0:0,s0:1,x0:0,y0:0,cx:0,cy:0,moved:false,lastTap:0,startT:0};
 function openLightbox(src,title){ const lb=$("#lightbox"); if(!src) return; $("#lbImg").src=src; $("#lbTitle").textContent=title||""; lbReset(); lb.hidden=false; requestAnimationFrame(()=>lb.classList.add("on")); pushLayer("lightbox"); buzz(4) }
@@ -1864,7 +1959,7 @@ function priceWarn(p){ const f=$("#artForm"), w=$("#prixWarn"); if(!f||!w) retur
   let msg=""; if(v>e.list*1.4) msg=`⚠️ ${fmtE0(v)} c'est ${Math.round((v/e.list-1)*100)} % au-dessus du prix conseillé (${fmtE0(e.list)}). Ça se tente seulement si tu as vu des annonces similaires à ce prix.`; else if(v<e.quick*.8) msg=`⚠️ ${fmtE0(v)} c'est sous la vente rapide (${fmtE0(e.quick)}) : tu laisses de l'argent sur la table.`; else if(e.cost>0&&v<e.cost*1.3) msg=`⚠️ À ${fmtE0(v)} tu ne couvres presque pas ton coût (${fmtE(e.cost)}).`;
   w.hidden=!msg; w.textContent=msg }
 function draftFromForm(base){
-  return Object.assign({},base,{marque:val("fMarque"),type:readOpt("type"),taille:readOpt("taille"),etat:readOpt("etat"),couleur:readOpt("couleur"),matiere:val("fMatiere"),details:readOpt("details"),lotId:val("fLot"),defauts:val("fDef"),modele:val("fModele"),prixNeuf:val("fNeuf"),comps:val("fComps"),defs:readOpt("defs"),genre:readOpt("genre")});
+  return Object.assign({},base,{marque:val("fMarque"),type:readOpt("type"),taille:readOpt("taille"),etat:readOpt("etat"),couleur:readOpt("couleur"),matiere:val("fMatiere"),details:readOpt("details"),lotId:val("fLot"),defauts:val("fDef"),modele:val("fModele"),prixNeuf:val("fNeuf"),comps:val("fComps"),defs:readOpt("defs"),genre:readOpt("genre"),prixAffiche:val("fPrix")});
 }
 
 function openArt(id,opts={}){
@@ -1941,7 +2036,7 @@ function annonceSheet(a){
       <div class="seg">${[["pepite","🔥 Pépite"],["clean","Sobre"],["express","Express"]].map(([k,l])=>`<button type="button" class="btn sm ${annState.ton===k?"pri":""}" data-act="ann-ton" data-v="${k}">${l}</button>`).join("")}</div>
       ${missing.length?`<p class="hint" style="margin:10px 0 0">Plus c'est précis, plus ça vend : il manque ${missing.join(", ")}. <button class="btn sm" data-act="open-art" data-id="${a.id}" style="height:28px">Compléter</button></p>`:""}
       <div class="out-h"><span class="lbl">Titre</span><button class="btn sm" data-act="copy" data-t="titre">${IC.copy} Copier</button></div>
-      <div class="out" id="oTitre">${esc(g.titre)}</div>
+      <div class="out" id="oTitre">${esc(g.titre)}</div><div class="hint" style="margin:-6px 0 8px;display:flex;justify-content:space-between"><span>Marque + type + détail + taille : ce que tapent les acheteurs</span><span class="mono ${g.titre.length>50?"neg":""}">${g.titre.length}/50</span></div>
       <div class="out-h"><span class="lbl">Description</span><button class="btn sm" data-act="copy" data-t="desc">${IC.copy} Copier</button></div>
       <div class="out" id="oDesc">${esc(g.desc)}\n\n${esc(g.hashtags)}</div>
       <div class="btns" style="margin-top:12px"><button class="btn" data-act="ann-shuffle">↻ Autre version</button><button class="btn" data-act="copy" data-t="all">${IC.copy} Tout copier</button></div>
@@ -2133,6 +2228,7 @@ document.addEventListener("click",async e=>{
   const pk=e.target.closest("[data-pick]"); if(pk){pickBrand(pk.dataset.pick);return}
   const pkc=e.target.closest("[data-pick-custom]"); if(pkc){pickBrand(pkc.dataset.pickCustom,pkc.dataset.tier);return}
   if(e.target.closest("#pickClose")||e.target===$("#picker")){closePicker();return}
+  if(e.target.closest("#studioClose")||e.target===$("#studio")){closeStudio();return}
   const t=e.target.closest("[data-act]"); if(!t) return;
   const act=t.dataset.act, id=t.dataset.id, A=()=>db.articles.find(x=>x.id===id);
   switch(act){
@@ -2173,6 +2269,15 @@ document.addEventListener("click",async e=>{
     case "ann-ton": annState.ton=t.dataset.v; annState.draw(); break;
     case "ann-shuffle": annState.seed++; annState.draw(); break;
     case "proj": projSheet(); break;
+    case "studio": { const f=$("#artForm"); const base=f&&f.dataset.id?db.articles.find(x=>x.id===f.dataset.id):{}; openStudio(f?draftFromForm(base||{}):(A()||{})); break }
+    case "st-auto": ST.auto=!ST.auto; t.classList.toggle("pri",ST.auto); stDrawSoon(); break;
+    case "st-ratio": ST.ratio=ST.ratio==="1"?"45":"1"; $("#studioBody").innerHTML=studioHTML(); stDrawSoon(); break;
+    case "st-reset": Object.assign(ST,{zoom:1,x:0,y:0,bri:0,con:0,warm:0,sat:0,auto:true,badge:""}); stSnap(); $("#studioBody").innerHTML=studioHTML(); stDrawSoon(); break;
+    case "st-badge": ST.badge=t.dataset.v||""; t.parentElement.querySelectorAll("button").forEach(b=>b.classList.toggle("on",b===t)); stDrawSoon(); e.stopPropagation(); break;
+    case "st-sel": stSelect(+t.dataset.i); $("#studioBody").innerHTML=studioHTML(); stDrawSoon(); break;
+    case "st-apply-all": stSnap(); ST.items.forEach(it=>{["bri","con","warm","sat","auto"].forEach(k=>it[k]=ST[k])}); toast("Réglages appliqués à toutes les photos"); break;
+    case "st-share": stShare(); break;
+    case "st-use": stUse(); break;
     case "vinted-go": { const g=annState.art&&annState.art._ann; if(g) copyText(g.titre+"\n\n"+g.desc+"\n\n"+g.hashtags); buzz(10); break }
     case "copy": { const g=annState.art&&annState.art._ann; if(!g)break; const txt=t.dataset.t==="titre"?g.titre:t.dataset.t==="desc"?g.desc+"\n\n"+g.hashtags:g.titre+"\n\n"+g.desc+"\n\n"+g.hashtags; copyText(txt); break }
     case "dup-art": { const a=A(); if(!a)break; const c=JSON.parse(JSON.stringify(a)); Object.assign(c,{id:uid(),ref:nextRef("a"),created:Date.now(),statut:"En stock",photo:false,dateEnLigne:"",dateVente:"",prixVente:"",frais:""}); db.articles.push(c); save(); toast(`${c.ref} créée`); openArt(c.id); render(); break }
@@ -2223,15 +2328,18 @@ document.addEventListener("input",e=>{
   if(e.target.id==="pickQ"){pickState.q=e.target.value;drawPicker();return}
   if(["fDef","fModele","fNeuf","fComps"].includes(e.target.id)){clearTimeout(window._defT);window._defT=setTimeout(refreshSug,350);return}
   if(e.target.id==="fPrix"){priceWarn();return}
+  if(e.target.id==="stZoom"){ST.zoom=+e.target.value/100; e.target.parentElement.querySelector(".mono").textContent=ST.zoom.toFixed(1)+"×"; stDrawSoon(); return}
+  if(e.target.dataset.k&&e.target.closest(".st-row")){ST[e.target.dataset.k]=+e.target.value; e.target.parentElement.querySelector(".mono").textContent=e.target.value; stDrawSoon(); return}
   if(e.target.id==="q"){ui.q=e.target.value;const pos=e.target.selectionStart;render();const q=$("#q");if(q){q.focus();try{q.setSelectionRange(pos,pos)}catch(_){}}}
 });
 document.addEventListener("change",async e=>{
   if(e.target.id==="sort"){ui.sort=e.target.value;render()}
   if(e.target.id==="fMatiere"||e.target.id==="fLot") refreshSug();
+  if(e.target.id==="stFile"&&e.target.files[0]){ stSnap(); let first=-1; for(const f of [...e.target.files].slice(0,10)){ await stLoad(URL.createObjectURL(f)); if(ST.img){ const i=stAdd(ST.img); if(first<0) first=i } } if(first>=0) stSelect(first); e.target.value=""; $("#studioBody").innerHTML=studioHTML(); stDrawSoon(); return }
   if(e.target.id==="fPhoto"&&e.target.files[0]){try{pendingPhoto=await compress(e.target.files[0]);$("#photoBox").innerHTML=photoBoxHTML(`<img src="${pendingPhoto}" alt="Photo de l'article">`)}catch(_){toast("Impossible de lire cette photo")}}
   if(e.target.id==="fileImport"&&e.target.files[0]){const r=new FileReader();r.onload=()=>doImport(r.result);r.readAsText(e.target.files[0]);e.target.value=""}
 });
-document.addEventListener("keydown",e=>{if(e.key==="Escape"){if(!$("#lightbox").hidden)closeLightbox();else if(!$("#picker").hidden)closePicker();else if(!$("#sheet").hidden)closeSheet()}});
+document.addEventListener("keydown",e=>{if(e.key==="Escape"){if(!$("#lightbox").hidden)closeLightbox();else if(!$("#studio").hidden)closeStudio();else if(!$("#picker").hidden)closePicker();else if(!$("#sheet").hidden)closeSheet()}});
 
 /* boot */
 const h=(location.hash||"").slice(1); if(["home","stock","lots","more"].includes(h)) ui.view=h;
