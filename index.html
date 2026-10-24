@@ -161,6 +161,8 @@ h1,h2,h3{font-family:var(--f-display);margin:0;text-wrap:balance;letter-spacing:
 .btn.block{width:100%}
 .btn svg{width:18px;height:18px}
 .btns{display:flex;gap:8px;flex-wrap:wrap}
+.actgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px} .actgrid .btn{justify-content:center;white-space:nowrap}
+.actgrid .btn:first-child:nth-last-child(odd){grid-column:1/-1}
 .btns > .btn{flex:1 1 auto}
 :focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 
@@ -314,6 +316,12 @@ a.btn{text-decoration:none}
 .seg2{display:grid;grid-template-columns:1fr 1fr;gap:4px;background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:4px;margin-bottom:14px}
 .seg2 button{border:0;background:none;border-radius:9px;padding:9px;font-weight:700;cursor:pointer;color:var(--muted)}
 .seg2 button.on{background:var(--surface);color:var(--ink);box-shadow:var(--shadow)}
+.seg4{grid-template-columns:repeat(4,1fr);position:sticky;top:0;z-index:3} .seg4 button{padding:9px 4px;font-size:14px;position:relative}
+.seg4 button.todo::after{content:"";position:absolute;top:6px;right:8px;width:6px;height:6px;border-radius:50%;background:var(--warn)}
+.seg4 button.on.todo::after{background:var(--warn)}
+.next-tab{margin-top:6px} .btn.block{width:100%;display:flex;justify-content:center}
+.fsec-h{margin:18px 0 8px;display:flex;flex-direction:column;gap:2px} .fsec-h b{font-family:var(--f-display);font-size:16px}
+.btn.warnb{background:var(--warn-soft);color:var(--warn);border-color:transparent}
 .sheet-foot{display:flex;gap:8px;padding:10px 16px calc(12px + env(safe-area-inset-bottom,0px));border-top:1px solid var(--line);background:var(--bg);flex:none}
 .sheet-foot .btn{flex:1}
 details.more summary{cursor:pointer;font-size:13px;font-weight:700;color:var(--accent);padding:6px 0}
@@ -1124,8 +1132,8 @@ function suggestPrice(a){ const e=estimate(a); return {lo:e.quick,mid:e.mid,hi:e
 const SEED = {
   v:1,
   settings:{taux:15,minAnnonce:10,minEnvoi:10,objectif:100,dacN:30,dacEur:2000,alerteJours:21,remiseLot:10},
-  lots:[{id:"l1",ref:"L001",date:"2026-10-05",fournisseur:"Friptadium",nom:"Hauts Homme · Premium · 5 kg",facture:"FF-1694",poids:5,prix:109.99,reduction:10.99,port:9.49,pieces:null,statut:"En route",notes:"Code BIENVENUE10 · Mondial Relay"}],
-  articles:[], depenses:[], temps:[], chrono:null, lastBackup:null, seq:{a:0,l:1}
+  lots:[],
+  articles:[], depenses:[], temps:[], chrono:null, lastBackup:null, seq:{a:0,l:0}
 };
 let real = load();
 let demo = null;
@@ -1290,7 +1298,7 @@ function alerts(s){
   db.lots.filter(l=>l.statut==="En route").forEach(l=>out.push({k:"info",ic:"📦",t:`Réceptionner ${l.ref}`,d:`${l.fournisseur} · en route`,act:"receive",id:l.id}));
   db.lots.filter(l=>l.statut==="Reçu"&&num(l.pieces)>0&&lotArts(l).length<num(l.pieces)).forEach(l=>out.push({k:"warn",ic:"✏️",t:`${num(l.pieces)-lotArts(l).length} à saisir`,d:`${l.ref} · ${l.fournisseur}`,act:"rafale",id:l.id}));
   const old=db.articles.filter(a=>a.statut==="En ligne"&&daysOnline(a)>=S.alerteJours);
-  if(old.length) out.push({k:"warn",ic:"📉",t:`${old.length} à relancer`,d:`en ligne depuis ${S.alerteJours} j+`,act:"filter",id:"old"});
+  if(old.length) out.push({k:"warn",ic:"📉",t:`${old.length} à republier`,d:`en ligne depuis ${S.alerteJours} j+, tape 🔁`,act:"filter",id:"old"});
   const stock=db.articles.filter(a=>a.statut==="En stock");
   if(stock.length) out.push({k:"info",ic:"🚀",t:`${stock.length} à publier`,d:"pas encore en ligne",act:"filter",id:"En stock"});
   const resv=db.articles.filter(a=>a.statut==="Réservé"); if(resv.length) out.push({k:"info",ic:"🤝",t:`${resv.length} réservé${resv.length>1?"s":""}`,d:"à confirmer vendu",act:"filter",id:"Réservé"});
@@ -1426,7 +1434,7 @@ function viewHome(){
       ${kpi("Chiffre d'affaires",fmtE(s.ca),`${s.nSold} vente${s.nSold>1?"s":""}`,"",{act:"filter",id:"Vendu"})}
       ${kpi("Bénéfice sur pièces vendues",fmtE(s.benefVentes),isFinite(s.marge)?`marge ${fmtP(s.marge)}`:"aucune vente",sgn(s.benefVentes))}
       ${kpi("ROI",isFinite(s.roi)?fmtP(s.roi):"–","bénéfice net / dépensé",sgn(s.roi))}
-      ${kpi("Bénéfice projeté (réaliste)",fmtSigned(s.projReal),`de ${fmtSigned(s.projPess)} à ${fmtSigned(s.projOpt)} · max ${fmtSigned(s.potentiel)}`,sgn(s.projReal),{act:"proj",id:""})}
+      ${kpi("Bénéfice projeté (réaliste)",fmtSigned(s.projReal),`${fmtE0(s.projPess)} à ${fmtE0(s.projOpt)}`,sgn(s.projReal),{act:"proj",id:""})}
       ${kpi("Dépensé",fmtE(s.out),`lots ${fmtE0(s.investLots)} · autres ${fmtE0(s.depenses+s.frais)}`)}
       ${kpi("Stock (coût d'achat)",fmtE(s.stockCout),`${s.nStock+s.nLigne} pièce${s.nStock+s.nLigne>1?"s":""} dispo`,"",{act:"filter",id:"dispo"})}
       ${kpi("Prix de vente moyen",isFinite(s.panier)?fmtE(s.panier):"–",isFinite(s.benefMoy)?`${fmtSigned(s.benefMoy)} / pièce`:"")}
@@ -1507,14 +1515,15 @@ function artLine(a){
   const age=a.statut==="En ligne"&&d!==null?` · <span class="${d>=S.alerteJours?"neg":""}">J+${d}</span>`:isSold(a)&&a.dateVente?` · vendu le ${fmtD(a.dateVente)}`:"";
   const act=(cls,act,ic,label)=>`<button class="sw-act ${cls}" data-act="${act}" data-id="${a.id}"><i>${ic}</i><small>${label}</small></button>`;
   let L="",R="";
-  if(a.statut==="En ligne"){ L=act("good","sell","✓","Vendu")+act("tag","annonce",IC.spark,"Annonce"); R=act("warn","mark-reserve","🤝","Réservé") }
+  const old=a.statut==="En ligne"&&(daysOnline(a)||0)>=S.alerteJours;
+  if(a.statut==="En ligne"){ L=act("good","sell","✓","Vendu")+act("tag","annonce",IC.spark,"Annonce"); R=act("warn","mark-reserve","🤝","Réservé")+act("info","repost","🔁","Republier") }
   else if(a.statut==="Réservé"){ L=act("good","sell","✓","Vendu")+act("tag","annonce",IC.spark,"Annonce"); R=act("info","mark-online","↩","En ligne") }
   else if(a.statut==="En stock"||a.statut==="Retourné"){ L=act("info","publish","🚀","Publier")+act("tag","annonce",IC.spark,"Annonce"); R=act("neutral","mark-inv","✕","Invendable") }
   else if(a.statut==="Vendu"){ L=act("neutral","dup-art","⧉","Dupliquer"); R=act("violet","mark-retour","↩","Retour") }
   else { L=act("bad","del-art-now","🗑","Supprimer"); R=act("info","mark-stock","↺","En stock") }
   return `<div class="sw" data-swid="${a.id}"><div class="sw-acts l">${L}</div>${R?`<div class="sw-acts r">${R}</div>`:""}<div class="sw-body"><button class="item" data-act="open-art" data-id="${a.id}">${artThumb(a)}
     <div class="mid"><div class="t1">${esc(brandName(a.marque)||"Sans marque")}</div><div class="t2">${esc(sub)}${age}</div><div class="t2 mono">${esc(a.ref)}${a.lotId&&lotById(a.lotId)?" · "+esc(lotById(a.lotId).ref):""}</div></div>
-    <div class="rt">${right}<span class="pill ${ST_CLASS[a.statut]}">${a.statut}</span></div></button></div></div>`;
+    <div class="rt">${right}<span class="pill ${ST_CLASS[a.statut]}">${a.statut==="En ligne"&&a.reposts>0?"Republié"+(a.reposts>1?" ×"+a.reposts:""):a.statut}</span></div></button></div></div>`;
 }
 function viewStock(){
   const S=db.settings, q=norm(ui.q);
@@ -1538,7 +1547,7 @@ function viewStock(){
   </div>
   <div class="chips">${filters.map(f=>`<button class="chip ${ui.filter===f?"on":""}" data-act="filter" data-id="${f}">${f}<span class="n">${f==="Tous"?db.articles.length:counts(f)}</span></button>`).join("")}
     ${ui.filter==="old"?`<button class="chip on" data-act="filter" data-id="Tous">En ligne depuis longtemps ✕</button>`:ui.filter==="dispo"?`<button class="chip on" data-act="filter" data-id="Tous">Disponibles ✕</button>`:""}</div>
-  ${ui.filter==="old"?`<div class="banner">Ces pièces sont en ligne depuis ${S.alerteJours} jours ou plus. Baisse le prix de 10 à 15 %, change la 1re photo ou relance l'annonce.</div>`:ui.filter==="En stock"&&L.length?`<div class="banner">Pas encore en ligne : ouvre une pièce, génère l'annonce et publie-la. Le bouton 🚀 fait ça en un geste.</div>`:ui.filter==="Réservé"&&L.length?`<div class="banner">Dès que le paiement est validé, le ✓ marque la pièce vendue.</div>`:""}
+  ${ui.filter==="old"?`<div class="banner">Ces pièces sont en ligne depuis ${S.alerteJours} jours ou plus. Tape 🔁 Republier sur une pièce : le texte est copié, tu supprimes l'ancienne annonce et tu la reposte à neuf (photos Studio, prix −10 % si zéro favori). Elle repart en tête du feed.</div>`:ui.filter==="En stock"&&L.length?`<div class="banner">Pas encore en ligne : ouvre une pièce, génère l'annonce et publie-la. Le bouton 🚀 fait ça en un geste.</div>`:ui.filter==="Réservé"&&L.length?`<div class="banner">Dès que le paiement est validé, le ✓ marque la pièce vendue.</div>`:""}
   ${L.length&&!uiPrefs.swipeHint?`<div class="banner hint-sw" id="swipeHint">👈 Glisse une pièce vers la gauche pour la vendre, la publier ou générer l'annonce. 👉 Vers la droite pour la réserver ou la marquer invendable. À fond : l'action part directement. <button type="button" data-act="hint-ok">OK</button></div>`:""}
   <div class="list">${L.length?L.map(artLine).join(""):`<div class="empty"><h3>${db.articles.length?"Rien ici":"Ton stock est vide"}</h3><p>${db.articles.length?"Aucune pièce ne correspond à ce filtre.":"Quand ta box arrive, ouvre « Lots » et lance la réception : tu ajouteras les pièces en rafale."}</p>${db.articles.length?"":`<button class="btn pri" data-act="new-art">Ajouter une pièce</button>`}</div>`}</div>`;
 }
@@ -1745,20 +1754,23 @@ function artForm(a,opts={}){
   const sold=isSold(a), p=suggestPrice(a);
   const cost=artCost(a);
   const pane=opts.pane||(sold?"vente":"fiche");
+  const okFiche=a.marque&&a.type&&a.taille&&a.etat, okPrix=num(a.prixAffiche)>0||sold, okDet=(a.details||[]).length||has(a.mesure1)||has(a.mesure2);
+  const tab=(id,label,done)=>`<button type="button" role="tab" class="${pane===id?"on":""} ${done?"":"todo"}" data-act="pane" data-id="${id}">${label}</button>`;
   return `
   ${a.id?`<div class="stats3" style="margin-top:0">
      <div class="mini"><div class="l">Coût</div><div class="v">${fmtE(cost)}</div></div>
      <div class="mini"><div class="l">${sold?"Bénéfice":"Marge visée"}</div><div class="v ${sgn(sold?artProfit(a):num(a.prixAffiche)-cost)}">${sold?fmtSigned(artProfit(a)):has(a.prixAffiche)?fmtSigned(num(a.prixAffiche)-cost):"–"}</div></div>
      <div class="mini"><div class="l">${sold?"Vendu en":a.statut==="En ligne"?"En ligne":"Statut"}</div><div class="v">${sold||a.statut==="En ligne"?(daysOnline(a)!==null?daysOnline(a)+" j":"–"):a.statut}</div></div></div>
-   <div class="btns" style="margin-bottom:14px">
+   <div class="actgrid">
      ${!sold?`<button type="button" class="btn sm pri" data-act="sell" data-id="${a.id}">✓ Vendu</button>`:""}
      ${a.statut==="En stock"||a.statut==="Retourné"?`<button type="button" class="btn sm" data-act="publish" data-id="${a.id}">🚀 Mettre en ligne</button>`:""}
+     ${a.statut==="En ligne"?`<button type="button" class="btn sm ${(daysOnline(a)||0)>=db.settings.alerteJours?"warnb":""}" data-act="repost" data-id="${a.id}">🔁 Republier</button>`:""}
      <button type="button" class="btn sm tag" data-act="annonce" data-id="${a.id}">${IC.spark} Annonce</button>
      ${a.vintedUrl?`<a class="btn sm" href="${esc(a.vintedUrl)}" target="_blank" rel="noopener">↗ Vinted</a>`:""}
      <button type="button" class="btn sm" data-act="dup-art" data-id="${a.id}">Dupliquer</button>
    </div>`:""}
   <form id="artForm" data-id="${a.id||""}" data-rafale="${opts.rafale?1:0}">
-   <div class="seg2" role="tablist"><button type="button" role="tab" class="${pane==="fiche"?"on":""}" data-act="pane" data-id="fiche">Fiche</button><button type="button" role="tab" class="${pane==="vente"?"on":""}" data-act="pane" data-id="vente">Prix & vente</button></div>
+   <div class="seg2 seg4" role="tablist">${tab("fiche","Fiche",okFiche)}${tab("prix","Prix",okPrix)}${tab("details","Détails",okDet||true)}${tab("vente","Vente",true)}</div>
    <div class="fpane" data-pane="fiche" ${pane==="fiche"?"":"hidden"}>
     <div class="photo" id="photoBox">${photoBoxHTML(a.photo?`<img data-photo="${a.id}" alt="Photo de l'article">`:"")}</div>
     <input type="file" id="fPhoto" accept="image/*" hidden>
@@ -1771,21 +1783,26 @@ function artForm(a,opts={}){
     <div class="fg"><span class="lbl">Couleur</span><div class="opt cols" data-opt="couleur">${COULEURS.map(c=>`<button type="button" data-v="${esc(c)}" class="${a.couleur===c?"on":""}"><i class="sw" style="background:${COL_HEX[c]||"#888"}"></i>${esc(c)}</button>`).join("")}</div></div>
     <div class="row2"><div class="fg"><label for="fMatiere">Matière</label><select class="inp" id="fMatiere"><option value="">–</option>${MATIERES.map(m=>`<option ${a.matiere===m?"selected":""}>${m}</option>`).join("")}</select></div>
       <div class="fg"><label for="fLot">Lot</label><select class="inp" id="fLot"><option value="">Aucun</option>${lots.map(l=>`<option value="${l.id}" ${a.lotId===l.id?"selected":""}>${esc(l.ref+" · "+l.fournisseur)}</option>`).join("")}</select></div></div>
-    <details class="more" ${(a.details||[]).length||has(a.mesure1)||has(a.mesure2)||a.defauts?"open":""}><summary>Détails pour l'annonce (mesures, défauts…)</summary>
-      <div class="fg" style="margin-top:10px"><span class="lbl">Détails</span>${optGroup("details",DETAILS,a.details,true)}</div>
-      <div class="row2"><div class="fg"><label for="fM1">Largeur à plat (cm)</label><input class="inp" id="fM1" inputmode="decimal" value="${esc(a.mesure1??"")}"></div>
-        <div class="fg"><label for="fM2">Longueur (cm)</label><input class="inp" id="fM2" inputmode="decimal" value="${esc(a.mesure2??"")}"></div></div>
-      <div class="fg"><label for="fDef">Précision sur les défauts (texte libre)</label><input class="inp" id="fDef" value="${esc(a.defauts||"")}" placeholder="ex : petite bouloche sous le bras"></div>
-    </details>
-    <details class="more prec" ${a.modele||has(a.prixNeuf)||a.comps||(a.defs||[]).length||(a.genre&&a.genre!=="Homme")?"open":""}><summary>🎯 Affiner le prix (modèle, prix neuf, annonces similaires)</summary>
-      <div class="fg" style="margin-top:10px"><label for="fModele">Modèle / collection</label><input class="inp" id="fModele" value="${esc(a.modele||"")}" placeholder="ex : Big Pony, 501, Nuptse, Reverse Weave…"><span class="hint">Les modèles iconiques se vendent plus cher : l'app en reconnaît une trentaine.</span></div>
+    <div class="next-tab"><button type="button" class="btn block" data-act="pane" data-id="prix">Suivant : le prix →</button></div>
+   </div>
+   <div class="fpane" data-pane="prix" ${pane==="prix"?"":"hidden"}>
+    <div id="sugBox">${sugHTML(p)}</div>
+    <div class="fg" style="margin-top:12px"><label for="fPrix">Prix affiché (€)</label><div class="hint warnp" id="prixWarn" hidden></div><div class="urlrow"><input class="inp" id="fPrix" inputmode="decimal" value="${esc(a.prixAffiche??"")}" placeholder="${p.hi}">${a.id&&num(a.prixAffiche)>0&&!sold?`<button type="button" class="btn sm" data-act="drop-price" data-id="${a.id}" title="Baisser de 10 %">−10 %</button>`:""}</div></div>
+    <div class="fsec-h"><b>🎯 Affiner le prix</b><span class="hint">Chaque champ rempli rend l'estimation plus juste.</span></div>
+      <div class="fg"><label for="fModele">Modèle / collection</label><input class="inp" id="fModele" value="${esc(a.modele||"")}" placeholder="ex : Big Pony, 501, Nuptse, Reverse Weave…"><span class="hint">Les modèles iconiques se vendent plus cher : l'app en reconnaît une trentaine.</span></div>
       <div class="row2"><div class="fg"><label for="fNeuf">Prix neuf (€)</label><input class="inp" id="fNeuf" inputmode="decimal" value="${esc(a.prixNeuf??"")}" placeholder="${p.e.retail?"≈ "+Math.round(p.e.retail):""}"><span class="hint">Étiquette ou 10 s sur Google. Affine le prix et s'affiche dans l'annonce (« 110 € neuf en boutique »).</span></div>
         <div class="fg"><span class="lbl">Pour</span>${optGroup("genre",Object.keys(GENRE_M),a.genre||"Homme")}</div></div>
       <div class="fg"><label for="fComps">Annonces similaires vues sur Vinted (€)</label><input class="inp" id="fComps" value="${esc(a.comps||"")}" placeholder="ex : 35 42 38" inputmode="decimal"><span class="hint">Tape les prix de 3 annonces de la même pièce : l'estimation s'aligne dessus.</span></div>
+   </div>
+   <div class="fpane" data-pane="details" ${pane==="details"?"":"hidden"}>
+    <div class="fsec-h"><b>Pour l'annonce</b><span class="hint">Mesures et détails rassurent et évitent les retours.</span></div>
+    <div class="row2"><div class="fg"><label for="fM1">Largeur à plat (cm)</label><input class="inp" id="fM1" inputmode="decimal" value="${esc(a.mesure1??"")}"></div>
+        <div class="fg"><label for="fM2">Longueur (cm)</label><input class="inp" id="fM2" inputmode="decimal" value="${esc(a.mesure2??"")}"></div></div>
+      <div class="fg"><span class="lbl">Détails</span>${optGroup("details",DETAILS,a.details,true)}</div>
+    <div class="fsec-h"><b>Défauts</b><span class="hint">Dis tout : ça baisse le prix estimé mais ça évite les litiges.</span></div>
       <div class="fg"><span class="lbl">Défauts</span>${optGroup("defs",Object.keys(DEFAUTS),a.defs,true)}</div>
-    </details>
-    <div id="sugBox" style="margin-top:12px">${sugHTML(p)}</div>
-    <div class="fg" style="margin-top:12px"><label for="fPrix">Prix affiché (€)</label><div class="hint warnp" id="prixWarn" hidden></div><div class="urlrow"><input class="inp" id="fPrix" inputmode="decimal" value="${esc(a.prixAffiche??"")}" placeholder="${p.hi}">${a.id&&num(a.prixAffiche)>0&&!sold?`<button type="button" class="btn sm" data-act="drop-price" data-id="${a.id}" title="Baisser de 10 %">−10 %</button>`:""}</div></div>
+      <div class="fg"><label for="fDef">Précision sur les défauts (texte libre)</label><input class="inp" id="fDef" value="${esc(a.defauts||"")}" placeholder="ex : petite bouloche sous le bras"></div>
+    <div class="fg"><label for="fNotes">Notes</label><textarea class="inp" id="fNotes" rows="2">${esc(a.notes||"")}</textarea></div>
    </div>
    <div class="fpane" data-pane="vente" ${pane==="vente"?"":"hidden"}>
     <div class="fg"><span class="lbl">Statut</span>${optGroup("statut",STATUTS,a.statut||"En stock")}</div>
@@ -1798,7 +1815,6 @@ function artForm(a,opts={}){
     <p class="hint" style="margin-top:-6px">Frais = ce que tu paies toi (emballage, boost). Sur Vinted, l'acheteur paie la protection et le port.</p>
     <div class="fg"><label for="fCout">Coût d'achat forcé (€)</label><input class="inp" id="fCout" inputmode="decimal" value="${esc(a.coutManuel??"")}" placeholder="Auto : ${fmtE(artCost(a.id?a:{lotId:a.lotId}))}"><span class="hint">Laisse vide : le coût est calculé à partir du lot.</span></div>
     <div class="fg"><label for="fVurl">Lien de l'annonce Vinted</label><div class="urlrow"><input class="inp" type="text" id="fVurl" inputmode="url" autocapitalize="off" autocorrect="off" value="${esc(a.vintedUrl||"")}" placeholder="https://www.vinted.fr/items/…">${a.vintedUrl?`<a class="btn sm" href="${esc(a.vintedUrl)}" target="_blank" rel="noopener">Ouvrir</a>`:""}</div><span class="hint">Colle le lien une fois l'annonce publiée : tu pourras l'ouvrir en un tap depuis Rayon.</span></div>
-    <div class="fg"><label for="fNotes">Notes</label><textarea class="inp" id="fNotes" rows="2">${esc(a.notes||"")}</textarea></div>
     ${a.id?`<div class="btns" style="margin-top:10px"><button type="button" class="btn sm danger" data-act="del-art" data-id="${a.id}">Supprimer cette pièce</button></div>`:""}
    </div>
   </form>`;
@@ -1823,7 +1839,7 @@ function sugHTML(p){
       <button type="button" class="pc-opt" data-act="use-sug" data-v="${e.quick}"><small>Vente rapide</small><b>${fmtE0(e.quick)}</b><small>en quelques jours</small></button>
     </div>
     ${e.cost>0?`<div class="hint" style="margin-top:8px">Coût ${fmtE(e.cost)} → au juste prix : <b class="${sgn(e.margin)}">${fmtSigned(e.margin)}</b> de bénéfice (x${fmtN(e.mult)}).${e.floor<=e.cost*1.3+1?" Ne descends pas sous le plancher.":""}</div>`:""}
-    <div class="hint" style="margin-top:6px">Patient ? Jusqu'à <b>${fmtE0(e.high)}</b> si tu peux attendre. Plancher absolu : <b>${fmtE0(e.floor)}</b>.</div>
+    <div class="hint" style="margin-top:6px">Patient&nbsp;? Jusqu'à <b>${fmtE0(e.high)}</b> si tu peux attendre. Plancher&nbsp;: <b>${fmtE0(e.floor)}</b>.</div>
     ${!e.known&&!e.custom?`<div class="hint" style="margin-top:6px">Choisis la marque pour une estimation fiable.</div>`:""}
     ${e.vintedQ&&!e.comps?`<div class="hint" style="margin-top:6px"><a class="tlink2" href="https://www.vinted.fr/catalog?search_text=${encodeURIComponent(e.vintedQ)}&order=relevance" target="_blank" rel="noopener">↗ Vérifier sur Vinted</a> puis note 3 prix d'annonces similaires dans « Affiner le prix » : fiabilité maximale.</div>`:""}
     <details class="pc-why"><summary>Pourquoi ce prix ?</summary>
@@ -2026,8 +2042,8 @@ function publishSheet(a){
 
 /* annonce sheet */
 const annState={ton:"pepite",seed:1};
-function annonceSheet(a){
-  annState.seed=Math.floor(Math.random()*1e6);
+function annonceSheet(a,opts={}){
+  annState.seed=Math.floor(Math.random()*1e6); annState.repost=!!opts.repost;
   const draw=()=>{
     const g=genAnnonce(a,annState.ton,annState.seed);
     const missing=[!a.marque&&"marque",!a.type&&"type",!a.taille&&"taille",!a.couleur&&"couleur",!a.matiere&&"matière",!(has(a.mesure1)||has(a.mesure2))&&"mesures"].filter(Boolean);
@@ -2039,7 +2055,8 @@ function annonceSheet(a){
       <div class="out-h"><span class="lbl">Description</span><button class="btn sm" data-act="copy" data-t="desc">${IC.copy} Copier</button></div>
       <div class="out" id="oDesc">${esc(g.desc)}\n\n${esc(g.hashtags)}</div>
       <div class="btns" style="margin-top:12px"><button class="btn" data-act="ann-shuffle">↻ Autre version</button><button class="btn" data-act="copy" data-t="all">${IC.copy} Tout copier</button></div>
-      <a class="btn pri block" style="margin-top:8px" id="vintedGo" href="${a.vintedUrl||"https://www.vinted.fr/items/new"}" target="_blank" rel="noopener" data-act="vinted-go">${a.vintedUrl?"↗ Ouvrir mon annonce Vinted":"↗ Publier sur Vinted (copie le texte)"}</a>
+      ${annState.repost?`<div class="banner" style="margin-top:12px">🔁 <b>Republier</b> : supprime l'ancienne annonce sur Vinted${a.vintedUrl?` (<a href="${esc(a.vintedUrl)}" target="_blank" rel="noopener">l'ouvrir</a>)`:""}, puis publie-la à neuf avec ce texte et des photos passées au Studio. Elle repart en tête du feed « nouveautés ».</div>`:""}
+      <a class="btn pri block" style="margin-top:8px" id="vintedGo" href="${annState.repost?"https://www.vinted.fr/items/new":(a.vintedUrl||"https://www.vinted.fr/items/new")}" target="_blank" rel="noopener" data-act="vinted-go">${annState.repost?"🔁 Republier sur Vinted (copie le texte)":a.vintedUrl?"↗ Ouvrir mon annonce Vinted":"↗ Publier sur Vinted (copie le texte)"}</a>
       <p class="hint" style="margin:6px 0 0">${a.vintedUrl?"Le texte est copié au passage, pratique pour mettre à jour l'annonce.":"Le titre et la description sont copiés, la page de dépôt Vinted s'ouvre. Colle le texte, ajoute tes photos, publie. Puis colle le lien de l'annonce dans la fiche."}</p>
       <div class="sec tip"><b>Pour vendre plus vite</b><ul style="padding-left:18px;margin:6px 0 0">
         <li>1re photo : la pièce entière, à plat ou portée, en lumière du jour sur fond neutre.</li>
@@ -2277,7 +2294,9 @@ document.addEventListener("click",async e=>{
     case "st-apply-all": stSnap(); ST.items.forEach(it=>{["bri","con","warm","sat","auto"].forEach(k=>it[k]=ST[k])}); toast("Réglages appliqués à toutes les photos"); break;
     case "st-share": stShare(); break;
     case "st-use": stUse(); break;
-    case "vinted-go": { const g=annState.art&&annState.art._ann; if(g) copyText(g.titre+"\n\n"+g.desc+"\n\n"+g.hashtags); buzz(10); break }
+    case "vinted-go": { const g=annState.art&&annState.art._ann; if(g) copyText(g.titre+"\n\n"+g.desc+"\n\n"+g.hashtags); buzz(10);
+      if(annState.repost&&annState.art){ const a=db.articles.find(x=>x.id===annState.art.id); if(a){ const prev={dateEnLigne:a.dateEnLigne,vintedUrl:a.vintedUrl,reposts:a.reposts||0}; a.dateEnLigne=today(); a.reposts=(a.reposts||0)+1; a.vintedUrl=""; save(); annState.repost=false; render(); setTimeout(()=>toastUndo(`Republiée (×${a.reposts}), compteur de jours remis à zéro`,()=>{Object.assign(a,prev);save();render()}),700) } } break }
+    case "repost": { const a=A(); if(a) annonceSheet(a,{repost:true}); break }
     case "copy": { const g=annState.art&&annState.art._ann; if(!g)break; const txt=t.dataset.t==="titre"?g.titre:t.dataset.t==="desc"?g.desc+"\n\n"+g.hashtags:g.titre+"\n\n"+g.desc+"\n\n"+g.hashtags; copyText(txt); break }
     case "dup-art": { const a=A(); if(!a)break; const c=JSON.parse(JSON.stringify(a)); Object.assign(c,{id:uid(),ref:nextRef("a"),created:Date.now(),statut:"En stock",photo:false,dateEnLigne:"",dateVente:"",prixVente:"",frais:""}); db.articles.push(c); save(); toast(`${c.ref} créée`); openArt(c.id); render(); break }
     case "del-art": if(t.classList.contains("armed")){const a=A();db.articles=db.articles.filter(x=>x.id!==id);if(a&&a.photo)Photos.del(id);save();closeSheet();render();toast("Pièce supprimée")}else{t.classList.add("armed");t.textContent="Appuie encore pour supprimer"} break;
